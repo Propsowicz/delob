@@ -20,7 +20,7 @@ func Tokenize(expression string) ([]model.TokenizedExpression, error) {
 	}
 
 	return []model.TokenizedExpression{},
-		errors.New(fmt.Sprintf("delob error: Could not parse given expression: %s", expression))
+		fmt.Errorf("delob error: Could not parse given expression: %s", expression)
 }
 
 func addPlayerTokenizer(expression string) ([]model.TokenizedExpression, error) {
@@ -30,7 +30,7 @@ func addPlayerTokenizer(expression string) ([]model.TokenizedExpression, error) 
 	}
 
 	return []model.TokenizedExpression{
-			model.TokenizedExpression{
+			{
 				ProcessMethod: model.AddPlayer,
 				Arguments:     args,
 			},
@@ -41,7 +41,7 @@ func addPlayerTokenizer(expression string) ([]model.TokenizedExpression, error) 
 func extractArgumentsForAddPlayerMethod(expression string) ([]string, error) {
 	var result []string
 
-	expressionArguments := expression[len(addPlayerMethod):len(expression)]
+	expressionArguments := expression[len(addPlayerMethod):]
 	rawArgs := strings.Split(expressionArguments, ",")
 
 	for i := range rawArgs {

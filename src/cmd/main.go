@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
 	// "os"
 	"net"
@@ -19,10 +18,10 @@ import (
 )
 
 func main() {
-	port, err := newPort(os.Args)
-	if err != nil {
-		LogError(err)
-	}
+	// port, err := newPort(os.Args)
+	// if err != nil {
+	// 	LogError(err)
+	// }
 
 	// expr1 := "CREATE CATALOG Testowy (Id int, Name text, Value float)"
 	// core.HandleCall(expr1)
@@ -39,7 +38,7 @@ func main() {
 	// read.Read()
 	// fmt.Println(read.Read())
 
-	startTcpServer(port)
+	// startTcpServer(port)
 }
 
 type Port string
