@@ -1,6 +1,7 @@
 package processor
 
 import (
+	buffer "delob/internal/buffer"
 	"delob/internal/shared/model"
 	tokenizer "delob/internal/tokenizer"
 )
@@ -20,8 +21,11 @@ type addToPage struct {
 type addToLogs struct {
 }
 
-func Execute(expression string) (string, error) {
+func Execute(
+	expression string,
+	bufferManager *buffer.BufferManager) (string, error) {
 	tokenizedExpression, err := tokenizer.Tokenize(expression)
+
 	if err != nil {
 		return "", err
 	}

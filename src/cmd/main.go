@@ -8,6 +8,8 @@ import (
 	"net"
 	// "time"
 	"bufio"
+	buffer "delob/internal/buffer"
+	"delob/internal/processor"
 	"errors"
 	"regexp"
 	// "strings"
@@ -18,6 +20,17 @@ import (
 )
 
 func main() {
+
+	// need to nadle transaction -> optimistic locking?
+	bufferManager := buffer.NewBufferManager()
+
+	result, err := processor.Execute("", &bufferManager)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
+
 	// port, err := newPort(os.Args)
 	// if err != nil {
 	// 	LogError(err)
