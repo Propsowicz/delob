@@ -15,7 +15,7 @@ func Test_IfRandomStringReturnsError(t *testing.T) {
 }
 
 func Test_IfCanAddPlayer(t *testing.T) {
-	callStringMock := "ADD PLAYER 'Tomek'"
+	callStringMock := "ADD PLAYER 'Tomek';"
 	result, err := Tokenize(callStringMock)
 
 	if err != nil {
@@ -36,7 +36,7 @@ func Test_IfCanAddPlayer(t *testing.T) {
 }
 
 func Test_IfCanAddTwoPlayers(t *testing.T) {
-	callStringMock := "ADD PLAYER 'Tomek', 'Romek'"
+	callStringMock := "ADD PLAYER 'Tomek', 'Romek';"
 	result, err := Tokenize(callStringMock)
 
 	if err != nil {

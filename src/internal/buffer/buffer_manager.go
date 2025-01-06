@@ -1,7 +1,7 @@
 package buffer
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -17,13 +17,16 @@ func NewBufferManager() BufferManager {
 
 func (buffer *BufferManager) AddPlayer(entityId string) error {
 	if _, err := buffer.getPageAdresses(entityId); err == nil {
-		return errors.New("player already exists")
+		return fmt.Errorf("player already exists: %s", entityId)
 	}
 
 	buffer.syncMutex.Lock()
 
 	pageAdress := buffer.addPage(entityId)
-	buffer.addPageToDictionary(entityId, pageAdress)
+	err := buffer.addPageToDictionary(entityId, pageAdress)
+	if err != nil {
+		return err
+	}
 
 	buffer.syncMutex.Unlock()
 	return nil

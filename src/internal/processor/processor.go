@@ -4,6 +4,8 @@ import (
 	buffer "delob/internal/buffer"
 	"delob/internal/shared/model"
 	tokenizer "delob/internal/tokenizer"
+	"fmt"
+	"strings"
 )
 
 type transactionSteps struct {
@@ -39,23 +41,22 @@ func Execute(
 	// transactionId := time.Now().Nanosecond()
 	isTransactionSuccessful, transactionStepsTable := startTansaction()
 
-	result, ordersError := handleOrders(tokenizedExpression)
+	result, ordersError := handleOrders(tokenizedExpression, bufferManager)
 	if ordersError == nil {
 		isTransactionSuccessful = true
 	}
 
-	return result, finishTransaction(isTransactionSuccessful, transactionStepsTable)
+	return result, finishTransaction(isTransactionSuccessful, transactionStepsTable, ordersError)
 
 }
 
-func handleOrders(orders []model.TokenizedExpression) (string, error) {
+func handleOrders(orders []model.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
 	var result string = ""
 	var orderError error
 
 	for _, order := range orders {
-
 		if order.ProcessMethod == model.AddPlayer {
-			result, orderError = addPlayer(order)
+			result, orderError = addPlayer(order, bufferManager)
 			if orderError != nil {
 				return result, orderError
 			}
@@ -65,17 +66,40 @@ func handleOrders(orders []model.TokenizedExpression) (string, error) {
 	return result, nil
 }
 
-func addPlayer(order model.TokenizedExpression) (string, error) {
-	return "", nil
+func addPlayer(order model.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
+	var numberOfAddedPlayers int16
+	var isFullySuccessful bool = true
+	var invalidEntityIds []string
+
+	for i := range order.Arguments {
+		err := bufferManager.AddPlayer(order.Arguments[i])
+		if err != nil {
+			fmt.Println("here?")
+			fmt.Println(order.Arguments[i])
+			isFullySuccessful = false
+			invalidEntityIds = append(invalidEntityIds, order.Arguments[i])
+			continue
+		}
+		numberOfAddedPlayers++
+	}
+
+	if !isFullySuccessful {
+		return affectNumberOfRowsMessage(numberOfAddedPlayers),
+			fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidEntityIds, " | "))
+	}
+
+	return affectNumberOfRowsMessage(numberOfAddedPlayers), nil
 }
 
 func startTansaction() (bool, *transactionSteps) {
 	return false, &transactionSteps{}
 }
 
-func finishTransaction(isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps) error {
+func finishTransaction(isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps, err error) error {
 	if !isTransactionSuccessful {
-		return revertChanges(1)
+		revertChanges(1)
+
+		return err
 	}
 
 	return nil
@@ -84,4 +108,8 @@ func finishTransaction(isTransactionSuccessful bool, tratransactionStepsTable *t
 func revertChanges(transactionId int) error {
 	// in terms of error the records should be marked - isDirty and deleted?
 	return nil
+}
+
+func affectNumberOfRowsMessage(numberOfAffectedRows int16) string {
+	return fmt.Sprintf("%d row(s) affected", numberOfAffectedRows)
 }

@@ -1,8 +1,8 @@
 package buffer
 
 import (
+	hasher "delob/internal/utils"
 	"errors"
-	"fmt"
 )
 
 type PageDictionary struct {
@@ -10,25 +10,32 @@ type PageDictionary struct {
 }
 
 type PageData struct {
-	entityId     string
+	entityId     uint32
 	pageAdresses []*Page
 }
 
-func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) {
+func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) error {
+	hashedEntityId, err := hasher.Calculate(entityId)
+	if err != nil {
+		return err
+	}
+
 	newPageData := PageData{
-		entityId:     entityId,
+		entityId:     hashedEntityId,
 		pageAdresses: []*Page{pageAdress},
 	}
 	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, newPageData)
+	return nil
 }
 
 func (buffer *BufferManager) getPageAdresses(entityId string) ([]*Page, error) {
-	if len(buffer.pageDictionary.pagesData) == 0 {
-		return nil, errors.New("there are no pages in page dictionary")
+	hashedEntityId, err := hasher.Calculate(entityId)
+	if err != nil {
+		return nil, err
 	}
-	fmt.Println(entityId)
+
 	for i := range buffer.pageDictionary.pagesData {
-		if buffer.pageDictionary.pagesData[i].entityId == entityId {
+		if buffer.pageDictionary.pagesData[i].entityId == hashedEntityId {
 			return buffer.pageDictionary.pagesData[i].pageAdresses, nil
 		}
 	}

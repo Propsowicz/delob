@@ -40,13 +40,16 @@ func addPlayerTokenizer(expression string) ([]model.TokenizedExpression, error) 
 
 func extractArgumentsForAddPlayerMethod(expression string) ([]string, error) {
 	var result []string
+	if expression[len(expression)-1:] != ";" {
+		return []string{}, fmt.Errorf("expression should end with semicolon")
+	}
+	expression = expression[:len(expression)-1]
 
 	expressionArguments := expression[len(addPlayerMethod):]
 	rawArgs := strings.Split(expressionArguments, ",")
 
 	for i := range rawArgs {
 		str := strings.TrimSpace(rawArgs[i])
-		fmt.Println(str)
 		if strings.HasPrefix(str, "'") && strings.HasSuffix(str, "'") {
 			result = append(result, str[1:len(str)-1])
 		} else {
