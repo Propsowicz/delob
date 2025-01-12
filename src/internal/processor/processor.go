@@ -2,7 +2,6 @@ package processor
 
 import (
 	buffer "delob/internal/buffer"
-	"delob/internal/shared/model"
 	tokenizer "delob/internal/tokenizer"
 	"fmt"
 	"strings"
@@ -50,12 +49,12 @@ func Execute(
 
 }
 
-func handleOrders(orders []model.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
+func handleOrders(orders []tokenizer.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
 	var result string = ""
 	var orderError error
 
 	for _, order := range orders {
-		if order.ProcessMethod == model.AddPlayer {
+		if order.ProcessMethod == tokenizer.AddPlayer {
 			result, orderError = addPlayer(order, bufferManager)
 			if orderError != nil {
 				return result, orderError
@@ -66,7 +65,7 @@ func handleOrders(orders []model.TokenizedExpression, bufferManager *buffer.Buff
 	return result, nil
 }
 
-func addPlayer(order model.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
+func addPlayer(order tokenizer.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
 	var numberOfAddedPlayers int16
 	var isFullySuccessful bool = true
 	var invalidEntityIds []string
@@ -74,8 +73,6 @@ func addPlayer(order model.TokenizedExpression, bufferManager *buffer.BufferMana
 	for i := range order.Arguments {
 		err := bufferManager.AddPlayer(order.Arguments[i])
 		if err != nil {
-			fmt.Println("here?")
-			fmt.Println(order.Arguments[i])
 			isFullySuccessful = false
 			invalidEntityIds = append(invalidEntityIds, order.Arguments[i])
 			continue
