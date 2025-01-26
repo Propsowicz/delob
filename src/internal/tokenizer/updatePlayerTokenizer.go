@@ -12,22 +12,21 @@ func updatePlayerTokenizer(expression string) ([]TokenizedExpression, error) {
 		return result, err
 	}
 
+	var args []string
+
 	for i := range splitedUpdateExpression {
 		arg, errExtract := extractArgumentsForUpdatePlayerMethod(splitedUpdateExpression[i])
 		if errExtract != nil {
 			return result, errExtract
 		}
-
-		processMethod, errConv := convertStringToProcessMethod(arg[0])
-		if errConv != nil {
-			return result, errConv
-		}
-
-		result = append(result, TokenizedExpression{
-			ProcessMethod: processMethod,
-			Arguments:     arg[1:],
-		})
+		args = append(args, arg[0])
+		args = append(args, arg[1])
 	}
+
+	result = append(result, TokenizedExpression{
+		ProcessMethod: UpdatePlayers,
+		Arguments:     args,
+	})
 	return result, nil
 }
 
@@ -48,9 +47,9 @@ func extractArgumentsForUpdatePlayerMethod(expression string) ([]string, error) 
 
 	switch strings.ToUpper(expressionArgs[len(expressionArgs)-3]) {
 	case "WIN":
-		result = append(result, "1")
+		result = append(result, "WIN")
 	case "LOSE":
-		result = append(result, "2")
+		result = append(result, "LOSE")
 	}
 
 	id, err := extractIdFromString(expressionArgument)

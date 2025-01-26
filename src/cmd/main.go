@@ -9,7 +9,7 @@ import (
 	// "time"
 	"bufio"
 	buffer "delob/internal/buffer"
-	"delob/internal/processor"
+	p "delob/internal/processor"
 	"errors"
 	"regexp"
 	// "strings"
@@ -23,8 +23,9 @@ func main() {
 
 	// need to nadle transaction -> optimistic locking?
 	bufferManager := buffer.NewBufferManager()
+	processor := p.NewProcessor(&bufferManager)
 
-	result, err := processor.Execute("", &bufferManager)
+	result, err := processor.Execute("")
 	if err != nil {
 		fmt.Println(err)
 		return

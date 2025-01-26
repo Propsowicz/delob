@@ -27,9 +27,7 @@ func convertStringToProcessMethod(str string) (ProcessMethod, error) {
 	case "0":
 		return AddPlayer, nil
 	case "1":
-		return SetWin, nil
-	case "2":
-		return SetLose, nil
+		return UpdatePlayers, nil
 	default:
 		return AddPlayer, fmt.Errorf("cannot convert string to ProcessMethod enum")
 	}

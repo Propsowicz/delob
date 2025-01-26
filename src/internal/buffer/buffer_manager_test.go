@@ -21,22 +21,22 @@ func Test_IfCanAddPlayerToBuffer(t *testing.T) {
 	if len(result) != 1 {
 		t.Errorf("Should create one page.")
 	}
-	if result[0].header.entityId != entityIdMock {
+	if result[0].Header.entityId != entityIdMock {
 		t.Errorf("Wrong EntityId.")
 	}
-	if result[0].header.isLocked != false {
+	if result[0].Header.isLocked != false {
 		t.Errorf("Page should be unlocked.")
 	}
-	if result[0].header.lastUsedIndex != 0 {
+	if result[0].Header.lastUsedIndex != 0 {
 		t.Errorf("Last used index should be 0.")
 	}
-	if len(result[0].body) != int(utils.PAGE_SIZE) {
+	if len(result[0].Body) != int(utils.PAGE_SIZE) {
 		t.Errorf("Body has wrong number of records.")
 	}
-	if result[0].body[0].method != add {
+	if result[0].Body[0].Method != Add {
 		t.Errorf("First record should add value.")
 	}
-	if result[0].body[0].value != float32(utils.INITIAL_ELO) {
+	if result[0].Body[0].Value != utils.INITIAL_ELO {
 		t.Errorf("First record should contain proper initial elo value.")
 	}
 }

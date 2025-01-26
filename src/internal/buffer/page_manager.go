@@ -6,8 +6,8 @@ import (
 )
 
 type Page struct {
-	header Header
-	body   Body
+	Header Header
+	Body   Body
 }
 
 type Header struct {
@@ -22,31 +22,32 @@ type Body [utils.PAGE_SIZE]Record
 type Method int8
 
 const (
-	add      Method = iota
-	subtract Method = iota
+	Add      Method = iota
+	Subtract Method = iota
 )
 
 type Record struct {
-	method Method
-	value  float32
+	Method Method
+	Value  int16
 }
 
 func (buffer *BufferManager) addPage(entityId string) *Page {
 	newPage := Page{
-		header: Header{
+		Header: Header{
 			entityId:      entityId,
 			lastModifed:   time.Now().UTC().UnixMilli(),
 			isLocked:      true,
 			lastUsedIndex: -1,
 		},
-		body: [utils.PAGE_SIZE]Record{},
+		Body: [utils.PAGE_SIZE]Record{},
 	}
-	newPage.body[newPage.header.lastUsedIndex+1] = Record{
-		method: add,
-		value:  float32(utils.INITIAL_ELO),
+	newPage.Body[newPage.Header.lastUsedIndex+1] = Record{
+		Method: Add,
+		// TODO move it out of here
+		Value: utils.INITIAL_ELO,
 	}
-	newPage.header.isLocked = false
-	newPage.header.lastUsedIndex = newPage.header.lastUsedIndex + 1
+	newPage.Header.isLocked = false
+	newPage.Header.lastUsedIndex = newPage.Header.lastUsedIndex + 1
 
 	buffer.pages = append(buffer.pages, newPage)
 	return &buffer.pages[len(buffer.pages)-1]

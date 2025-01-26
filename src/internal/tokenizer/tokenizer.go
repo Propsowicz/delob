@@ -18,8 +18,7 @@ type ProcessMethod int8
 
 const (
 	AddPlayer ProcessMethod = iota
-	SetWin
-	SetLose
+	UpdatePlayers
 )
 
 const addPlayerMethod string = "ADD PLAYER "

@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+type Processor struct {
+	bufferManager *buffer.BufferManager
+}
+
+func NewProcessor(b *buffer.BufferManager) Processor {
+	return Processor{
+		bufferManager: b,
+	}
+}
+
 type transactionSteps struct {
 	addToPageManager addToPageManager
 	addToPage        addToPage
@@ -22,9 +32,8 @@ type addToPage struct {
 type addToLogs struct {
 }
 
-func Execute(
-	expression string,
-	bufferManager *buffer.BufferManager) (string, error) {
+func (p *Processor) Execute(
+	expression string) (string, error) {
 	tokenizedExpression, err := tokenizer.Tokenize(expression)
 
 	if err != nil {
@@ -38,24 +47,30 @@ func Execute(
 
 	// should be smth different
 	// transactionId := time.Now().Nanosecond()
-	isTransactionSuccessful, transactionStepsTable := startTansaction()
+	isTransactionSuccessful, transactionStepsTable := p.startTansaction()
 
-	result, ordersError := handleOrders(tokenizedExpression, bufferManager)
+	result, ordersError := p.handleOrders(tokenizedExpression)
 	if ordersError == nil {
 		isTransactionSuccessful = true
 	}
 
-	return result, finishTransaction(isTransactionSuccessful, transactionStepsTable, ordersError)
+	return result, p.finishTransaction(isTransactionSuccessful, transactionStepsTable, ordersError)
 
 }
 
-func handleOrders(orders []tokenizer.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
+func (p *Processor) handleOrders(orders []tokenizer.TokenizedExpression) (string, error) {
 	var result string = ""
 	var orderError error
 
 	for _, order := range orders {
 		if order.ProcessMethod == tokenizer.AddPlayer {
-			result, orderError = addPlayer(order, bufferManager)
+			result, orderError = p.addPlayer(order)
+			if orderError != nil {
+				return result, orderError
+			}
+		}
+		if order.ProcessMethod == tokenizer.UpdatePlayers {
+			result, orderError = p.updatePlayers(order)
 			if orderError != nil {
 				return result, orderError
 			}
@@ -65,13 +80,82 @@ func handleOrders(orders []tokenizer.TokenizedExpression, bufferManager *buffer.
 	return result, nil
 }
 
-func addPlayer(order tokenizer.TokenizedExpression, bufferManager *buffer.BufferManager) (string, error) {
+func (p *Processor) updatePlayers(order tokenizer.TokenizedExpression) (string, error) {
+	// get players
+	// calculate
+	// update
+	playerWin, playerLose, err := p.newPlayersPair(order.Arguments)
+	if err != nil {
+		return "", err
+	}
+
+	// playerWinElo, errWinElo := p.getPlayerById(playerWin)
+
+	return playerLose.Id + playerWin.Id, nil
+
+}
+
+func (p *Processor) newPlayersPair(ids []string) (Player, Player, error) {
+	playerWin, playerLose := Player{}, Player{}
+
+	playerWinId, playerLoseId, err := p.extractPlayerIds(ids)
+	if err != nil {
+		return Player{}, Player{}, err
+	}
+
+	playerWin, errWin := p.getPlayerById(playerWinId)
+	if errWin != nil {
+		return playerWin, playerLose, errWin
+	}
+
+	playerLose, errLose := p.getPlayerById(playerLoseId)
+	if errLose != nil {
+		return playerWin, playerLose, errLose
+	}
+
+	return playerWin, playerLose, nil
+}
+
+func (p *Processor) getPlayerById(entityId string) (Player, error) {
+	pages, err := p.bufferManager.GetPage(entityId)
+	if err != nil {
+		return Player{}, err
+	}
+
+	return newPlayer(entityId, pages), nil
+
+}
+
+func (p *Processor) extractPlayerIds(args []string) (string, string, error) {
+	var playerWin string
+	var playerLose string
+
+	errorChecker := 0
+	for i := 0; i < len(args); i++ {
+		if args[i] == "WIN" {
+			playerWin = args[i+1]
+			errorChecker++
+		}
+		if args[i] == "LOSE" {
+			playerWin = args[i+1]
+			errorChecker++
+		}
+	}
+
+	if errorChecker != 2 {
+		return playerWin, playerLose, fmt.Errorf("at least on of entities does not exists")
+	}
+
+	return playerWin, playerLose, nil
+}
+
+func (p *Processor) addPlayer(order tokenizer.TokenizedExpression) (string, error) {
 	var numberOfAddedPlayers int16
 	var isFullySuccessful bool = true
 	var invalidEntityIds []string
 
 	for i := range order.Arguments {
-		err := bufferManager.AddPlayer(order.Arguments[i])
+		err := p.bufferManager.AddPlayer(order.Arguments[i])
 		if err != nil {
 			isFullySuccessful = false
 			invalidEntityIds = append(invalidEntityIds, order.Arguments[i])
@@ -88,11 +172,11 @@ func addPlayer(order tokenizer.TokenizedExpression, bufferManager *buffer.Buffer
 	return affectNumberOfRowsMessage(numberOfAddedPlayers), nil
 }
 
-func startTansaction() (bool, *transactionSteps) {
+func (p *Processor) startTansaction() (bool, *transactionSteps) {
 	return false, &transactionSteps{}
 }
 
-func finishTransaction(isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps, err error) error {
+func (p *Processor) finishTransaction(isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps, err error) error {
 	if !isTransactionSuccessful {
 		revertChanges(1)
 

@@ -16,6 +16,8 @@ func NewBufferManager() BufferManager {
 }
 
 func (buffer *BufferManager) AddPlayer(entityId string) error {
+
+	// move it to processor?
 	if _, err := buffer.getPageAdresses(entityId); err == nil {
 		return fmt.Errorf("player already exists: %s", entityId)
 	}
