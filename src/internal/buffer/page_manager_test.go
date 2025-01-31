@@ -4,14 +4,38 @@ package buffer
 // 	"testing"
 // )
 
-// func Test_IfCanCreateNewPage(t *testing.T) {
-// 	var entityIdMock uint32 = 1234
-// 	pageManagerMock := NewPageManager()
-// 	pageAdress := pageManagerMock.AddPage(entityIdMock)
+// func Test_IfTryAppendToPageButNoEntityCreated_ThenThrow(t *testing.T) {
+// 	bufferMock := NewBufferManager()
+// 	var entityIdMock string = "testId"
 
-// 	result := pageManagerMock.GetPage(pageAdress)
+// 	result, err := bufferMock.tryAppendToPage(entityIdMock, Record{})
 
-// 	if result.header.entityId != entityIdMock {
-// 		t.Errorf("Wrong EntityId.")
+// 	if result == true {
+// 		t.Errorf("Result should be false.")
+// 	}
+// 	if err == nil {
+// 		t.Errorf("Result should return error.")
+// 	}
+// }
+
+// func Test_IfTryAppendToPageThatIsNotfull_ThenSucced(t *testing.T) {
+// 	bufferMock := NewBufferManager()
+// 	var entityIdMock string = "testId"
+
+// 	bufferMock.addPage(entityIdMock, Record{
+// 		Method: Add,
+// 		Value:  1500,
+// 	})
+
+// 	result, err := bufferMock.tryAppendToPage(entityIdMock, Record{
+// 		Method: Add,
+// 		Value:  25,
+// 	})
+
+// 	if result != true {
+// 		t.Errorf("Result should be true.")
+// 	}
+// 	if err != nil {
+// 		t.Errorf("Result should not return error.")
 // 	}
 // }

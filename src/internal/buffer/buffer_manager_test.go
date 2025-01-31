@@ -55,3 +55,116 @@ func Test_IfGetErrorWhenTryToAddExistingPlayerToBuffer(t *testing.T) {
 		t.Errorf("Should NOT create player.")
 	}
 }
+
+func Test_IfGetErrorWhenTryToUpdateNotExistingPlayerToBuffer(t *testing.T) {
+	bufferManager := NewBufferManager()
+	entityIdMock := "123987"
+	recordMock := Record{
+		Method: Add,
+		Value:  25,
+	}
+
+	err := bufferManager.UpdatePlayer(entityIdMock, recordMock)
+
+	if err == nil {
+		t.Errorf("Should not update player.")
+	}
+}
+
+func Test_IfCanUpdatePlayerWhenCanAddToExistingPage(t *testing.T) {
+	bufferManager := NewBufferManager()
+	entityIdMock := "123987"
+	recordMock := Record{
+		Method: Add,
+		Value:  25,
+	}
+	bufferManager.AddPlayer(entityIdMock)
+
+	err := bufferManager.UpdatePlayer(entityIdMock, recordMock)
+
+	if err != nil {
+		t.Errorf("Should update player.")
+	}
+
+	result, _ := bufferManager.GetPage(entityIdMock)
+
+	if len(result) != 1 {
+		t.Errorf("There should be one page.")
+	}
+	if result[0].Body[0].Method != 0 {
+		t.Errorf("First record should stay the same.")
+	}
+	if result[0].Body[0].Value != utils.INITIAL_ELO {
+		t.Errorf("First record should stay the same.")
+	}
+	if result[0].Body[1].Method != recordMock.Method {
+		t.Errorf("New record should be added.")
+	}
+	if result[0].Body[1].Value != recordMock.Value {
+		t.Errorf("New record should be added.")
+	}
+}
+
+func Test_IfCanUpdatePlayerWhenThereIsOnlyOneSlotInPage(t *testing.T) {
+	bufferManager := NewBufferManager()
+	entityIdMock := "123987"
+	recordMock := Record{Method: Add, Value: 25}
+	bufferManager.AddPlayer(entityIdMock)
+
+	for i := 0; i < int(utils.PAGE_SIZE)-2; i++ {
+		bufferManager.UpdatePlayer(entityIdMock, recordMock)
+	}
+
+	err := bufferManager.UpdatePlayer(entityIdMock, recordMock)
+
+	if err != nil {
+		t.Errorf("Should update player.")
+	}
+
+	result, _ := bufferManager.GetPage(entityIdMock)
+
+	if len(result) != 1 {
+		t.Errorf("There should be one page.")
+	}
+	if result[0].Body[0].Method != 0 {
+		t.Errorf("First record should stay the same.")
+	}
+	if result[0].Body[0].Value != utils.INITIAL_ELO {
+		t.Errorf("First record should stay the same.")
+	}
+	if result[0].Body[utils.PAGE_SIZE-1].Method != recordMock.Method {
+		t.Errorf("New record should be added.")
+	}
+	if result[0].Body[utils.PAGE_SIZE-1].Value != recordMock.Value {
+		t.Errorf("New record should be added.")
+	}
+}
+
+func Test_IfCanUpdatePlayerWhenPageIsFull(t *testing.T) {
+	bufferManager := NewBufferManager()
+	entityIdMock := "123987"
+	recordMock := Record{Method: Add, Value: 25}
+	bufferManager.AddPlayer(entityIdMock)
+
+	for i := 0; i < int(utils.PAGE_SIZE)-1; i++ {
+		bufferManager.UpdatePlayer(entityIdMock, recordMock)
+	}
+
+	err := bufferManager.UpdatePlayer(entityIdMock, recordMock)
+
+	if err != nil {
+		t.Errorf("Should update player.")
+	}
+
+	result, _ := bufferManager.GetPage(entityIdMock)
+
+	if len(result) != 2 {
+		t.Errorf("There should be two pages.")
+	}
+	if result[1].Body[0].Method != recordMock.Method {
+		t.Errorf("New record should be added.")
+	}
+	if result[1].Body[0].Value != recordMock.Value {
+		t.Errorf("New record should be added.")
+	}
+}

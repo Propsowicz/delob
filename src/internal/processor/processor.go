@@ -89,6 +89,11 @@ func (p *Processor) updatePlayers(order tokenizer.TokenizedExpression) (string, 
 		return "", err
 	}
 
+	calc := NewCalculator(playerWin, playerLose)
+
+	err1 := p.bufferManager.UpdatePlayer(playerWin.Id, buffer.Record{Method: 0, Value: calc.playerWinElo})
+	err2 := p.bufferManager.UpdatePlayer(playerLose.Id, buffer.Record{Method: 1, Value: calc.playerLoseElo})
+
 	// playerWinElo, errWinElo := p.getPlayerById(playerWin)
 
 	return playerLose.Id + playerWin.Id, nil

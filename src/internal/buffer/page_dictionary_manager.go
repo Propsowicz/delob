@@ -28,6 +28,22 @@ func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Pa
 	return nil
 }
 
+func (buffer *BufferManager) appendPageToExistingKey(entityId string, pageAdress *Page) error {
+	hashedEntityId, err := hasher.Calculate(entityId)
+	if err != nil {
+		return err
+	}
+
+	for i := range buffer.pageDictionary.pagesData {
+		if buffer.pageDictionary.pagesData[i].entityId == hashedEntityId {
+			buffer.pageDictionary.pagesData[i].pageAdresses =
+				append(buffer.pageDictionary.pagesData[i].pageAdresses, pageAdress)
+		}
+	}
+
+	return nil
+}
+
 func (buffer *BufferManager) getPageAdresses(entityId string) ([]*Page, error) {
 	hashedEntityId, err := hasher.Calculate(entityId)
 	if err != nil {

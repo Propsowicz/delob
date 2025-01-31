@@ -31,7 +31,16 @@ type Record struct {
 	Value  int16
 }
 
-func (buffer *BufferManager) addPage(entityId string) *Page {
+func (page *Page) isPageFull() bool {
+	return page.Header.lastUsedIndex+1 == utils.PAGE_SIZE
+}
+
+func (page *Page) append(record Record) {
+	page.Body[page.Header.lastUsedIndex+1] = record
+	page.Header.lastUsedIndex++
+}
+
+func (buffer *BufferManager) addPage(entityId string, record Record) *Page {
 	newPage := Page{
 		Header: Header{
 			entityId:      entityId,
@@ -41,14 +50,25 @@ func (buffer *BufferManager) addPage(entityId string) *Page {
 		},
 		Body: [utils.PAGE_SIZE]Record{},
 	}
-	newPage.Body[newPage.Header.lastUsedIndex+1] = Record{
-		Method: Add,
-		// TODO move it out of here
-		Value: utils.INITIAL_ELO,
-	}
+	newPage.Body[newPage.Header.lastUsedIndex+1] = record
 	newPage.Header.isLocked = false
 	newPage.Header.lastUsedIndex = newPage.Header.lastUsedIndex + 1
 
 	buffer.pages = append(buffer.pages, newPage)
 	return &buffer.pages[len(buffer.pages)-1]
+}
+
+func (buffer *BufferManager) tryAppendToPage(entityId string, record Record) (bool, error) {
+	pageAdresses, err := buffer.getPageAdresses(entityId)
+	if err != nil {
+		return false, err
+	}
+
+	for i := 0; i < len(pageAdresses); i++ {
+		if !pageAdresses[i].isPageFull() {
+			pageAdresses[i].append(record)
+			return true, nil
+		}
+	}
+	return false, nil
 }
