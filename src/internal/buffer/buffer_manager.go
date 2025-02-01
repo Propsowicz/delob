@@ -73,3 +73,20 @@ func (buffer *BufferManager) GetPage(entityId string) ([]Page, error) {
 	}
 	return result, nil
 }
+
+func (buffer *BufferManager) GetAllPages() ([]string, [][]Page, error) {
+	entityIdsResult := []string{}
+	pagesCollectionResult := [][]Page{}
+
+	for i := range buffer.pageDictionary.pagesData {
+
+		entityIdsResult = append(entityIdsResult, buffer.pageDictionary.pagesData[i].entityId)
+		pages := []Page{}
+		for j := range buffer.pageDictionary.pagesData[i].pageAdresses {
+			pages = append(pages, *buffer.pageDictionary.pagesData[i].pageAdresses[j])
+		}
+		pagesCollectionResult = append(pagesCollectionResult, pages)
+	}
+
+	return entityIdsResult, pagesCollectionResult, nil
+}

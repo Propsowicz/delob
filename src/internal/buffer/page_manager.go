@@ -22,6 +22,7 @@ type Body [utils.PAGE_SIZE]Record
 type Method int8
 
 const (
+	Unknown  Method = iota
 	Add      Method = iota
 	Subtract Method = iota
 )

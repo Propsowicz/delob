@@ -10,8 +10,9 @@ type PageDictionary struct {
 }
 
 type PageData struct {
-	entityId     uint32
-	pageAdresses []*Page
+	hashedEntityId uint32
+	entityId       string
+	pageAdresses   []*Page
 }
 
 func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) error {
@@ -21,8 +22,9 @@ func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Pa
 	}
 
 	newPageData := PageData{
-		entityId:     hashedEntityId,
-		pageAdresses: []*Page{pageAdress},
+		hashedEntityId: hashedEntityId,
+		entityId:       entityId,
+		pageAdresses:   []*Page{pageAdress},
 	}
 	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, newPageData)
 	return nil
@@ -35,7 +37,7 @@ func (buffer *BufferManager) appendPageToExistingKey(entityId string, pageAdress
 	}
 
 	for i := range buffer.pageDictionary.pagesData {
-		if buffer.pageDictionary.pagesData[i].entityId == hashedEntityId {
+		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
 			buffer.pageDictionary.pagesData[i].pageAdresses =
 				append(buffer.pageDictionary.pagesData[i].pageAdresses, pageAdress)
 		}
@@ -51,7 +53,7 @@ func (buffer *BufferManager) getPageAdresses(entityId string) ([]*Page, error) {
 	}
 
 	for i := range buffer.pageDictionary.pagesData {
-		if buffer.pageDictionary.pagesData[i].entityId == hashedEntityId {
+		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
 			return buffer.pageDictionary.pagesData[i].pageAdresses, nil
 		}
 	}

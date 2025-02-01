@@ -19,11 +19,13 @@ type ProcessMethod int8
 const (
 	AddPlayer ProcessMethod = iota
 	UpdatePlayers
+	SelectAll
 )
 
 const addPlayerMethod string = "ADD PLAYER "
 const setWinMethod string = "SET WIN FOR "
 const setLoseMethod string = "SET LOSE FOR "
+const selectAll string = "SELECT ALL"
 
 func Tokenize(expression string) ([]TokenizedExpression, error) {
 	expression, err := sanitazeExpression(expression)
@@ -38,6 +40,10 @@ func Tokenize(expression string) ([]TokenizedExpression, error) {
 	if strings.HasPrefix(strings.ToUpper(expression), setWinMethod) ||
 		strings.HasPrefix(strings.ToUpper(expression), setLoseMethod) {
 		return updatePlayerTokenizer(expression)
+	}
+
+	if strings.ToUpper(expression) == selectAll {
+		return selectAllTokenizer(expression)
 	}
 
 	return []TokenizedExpression{},

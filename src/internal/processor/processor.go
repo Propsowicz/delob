@@ -3,6 +3,7 @@ package processor
 import (
 	buffer "delob/internal/buffer"
 	tokenizer "delob/internal/tokenizer"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -75,29 +76,58 @@ func (p *Processor) handleOrders(orders []tokenizer.TokenizedExpression) (string
 				return result, orderError
 			}
 		}
+		if order.ProcessMethod == tokenizer.SelectAll {
+			result, orderError = p.selectAll(order)
+			if orderError != nil {
+				return result, orderError
+			}
+		}
 	}
 
 	return result, nil
 }
 
+func (p *Processor) selectAll(order tokenizer.TokenizedExpression) (string, error) {
+	allEntities, pagesCollections, err := p.bufferManager.GetAllPages()
+	if err != nil {
+		return "", err
+	}
+	playersCollection := []Player{}
+
+	for i := 0; i < len(allEntities); i++ {
+		playersCollection = append(playersCollection,
+			newPlayer(allEntities[i], pagesCollections[i]))
+	}
+	jsonResult, errMarshal := json.Marshal(playersCollection)
+	if errMarshal != nil {
+		return "", errMarshal
+	}
+
+	return string(jsonResult), nil
+}
+
 func (p *Processor) updatePlayers(order tokenizer.TokenizedExpression) (string, error) {
-	// get players
-	// calculate
-	// update
+
 	playerWin, playerLose, err := p.newPlayersPair(order.Arguments)
+	fmt.Println(playerWin)
+	fmt.Println(playerLose)
 	if err != nil {
 		return "", err
 	}
 
 	calc := NewCalculator(playerWin, playerLose)
 
-	err1 := p.bufferManager.UpdatePlayer(playerWin.Id, buffer.Record{Method: 0, Value: calc.playerWinElo})
-	err2 := p.bufferManager.UpdatePlayer(playerLose.Id, buffer.Record{Method: 1, Value: calc.playerLoseElo})
+	err1 := p.bufferManager.UpdatePlayer(playerWin.Id, buffer.Record{Method: buffer.Add, Value: calc.GetWinElo()})
+	if err1 != nil {
+		return "", err1
+	}
 
-	// playerWinElo, errWinElo := p.getPlayerById(playerWin)
+	err2 := p.bufferManager.UpdatePlayer(playerLose.Id, buffer.Record{Method: buffer.Subtract, Value: calc.GetLoseElo()})
+	if err2 != nil {
+		return "", err2
+	}
 
-	return playerLose.Id + playerWin.Id, nil
-
+	return affectNumberOfRowsMessage(2), nil
 }
 
 func (p *Processor) newPlayersPair(ids []string) (Player, Player, error) {
@@ -110,6 +140,7 @@ func (p *Processor) newPlayersPair(ids []string) (Player, Player, error) {
 
 	playerWin, errWin := p.getPlayerById(playerWinId)
 	if errWin != nil {
+
 		return playerWin, playerLose, errWin
 	}
 
@@ -126,9 +157,7 @@ func (p *Processor) getPlayerById(entityId string) (Player, error) {
 	if err != nil {
 		return Player{}, err
 	}
-
 	return newPlayer(entityId, pages), nil
-
 }
 
 func (p *Processor) extractPlayerIds(args []string) (string, string, error) {
@@ -142,7 +171,7 @@ func (p *Processor) extractPlayerIds(args []string) (string, string, error) {
 			errorChecker++
 		}
 		if args[i] == "LOSE" {
-			playerWin = args[i+1]
+			playerLose = args[i+1]
 			errorChecker++
 		}
 	}

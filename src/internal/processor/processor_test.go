@@ -71,7 +71,7 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	}
 }
 
-func Test_IfCannotUpdateWhenIdDoesnNotExists(t *testing.T) {
+func Test_IfCannotUpdateWhenIdDoesnNotExists_Case1(t *testing.T) {
 	bufferManager := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tomek';"
@@ -82,37 +82,68 @@ func Test_IfCannotUpdateWhenIdDoesnNotExists(t *testing.T) {
 	if err == nil {
 		t.Errorf("Should throw error.")
 	}
+}
 
-	bufferManager = buffer.NewBufferManager()
-	p = Processor{bufferManager: &bufferManager}
-	expressionMock = "ADD PLAYER 'Romek';"
+func Test_IfCannotUpdateWhenIdDoesnNotExists_Case2(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+	expressionMock := "ADD PLAYER 'Romek';"
 	p.Execute(expressionMock)
 
-	_, err = p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	_, err := p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
 
 	if err == nil {
 		t.Errorf("Should throw error.")
 	}
 }
 
-func Test_CanCorrectlyCalculateEloForOnePage(t *testing.T) {
-	var startValue int16 = 1300
-	var addValue int16 = 25
-	var substractValue int16 = 35
-	player := Player{}
+func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
 
-	player.records = append(player.records, addValue)
+	p.Execute("ADD PLAYER 'Tomek';")
+	result, err := p.Execute("SELECT ALL;")
 
-	player.calculateElo()
-	if player.Elo != startValue+addValue {
-		t.Errorf("Wrong elo calculation result")
+	if err != nil {
+		t.Errorf("Should not throw error.")
 	}
+	if result != "[{\"Id\":\"Tomek\",\"Elo\":1300}]" {
+		t.Errorf("incorrect result - %s", result)
+	}
+}
 
-	player.records = append(player.records, substractValue)
-	player.records = append(player.records, addValue)
+func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
 
-	player.calculateElo()
-	if player.Elo != startValue+addValue-substractValue+addValue {
-		t.Errorf("Wrong elo calculation result")
+	p.Execute("ADD PLAYER 'Tomek';")
+	p.Execute("ADD PLAYER 'Romek';")
+	result, err := p.Execute("SELECT ALL;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+	if result != "[{\"Id\":\"Tomek\",\"Elo\":1300},{\"Id\":\"Romek\",\"Elo\":1300}]" {
+		t.Errorf("incorrect result - %s", result)
+	}
+}
+
+func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("ADD PLAYER 'Tomek';")
+	p.Execute("ADD PLAYER 'Romek';")
+	p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	p.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
+
+	result, err := p.Execute("SELECT ALL;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+	if result != "[{\"Id\":\"Tomek\",\"Elo\":1325},{\"Id\":\"Romek\",\"Elo\":1275}]" {
+		t.Errorf("incorrect result - %s", result)
 	}
 }

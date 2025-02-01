@@ -1,6 +1,8 @@
 package processor
 
-import buffer "delob/internal/buffer"
+import (
+	buffer "delob/internal/buffer"
+)
 
 type Player struct {
 	Id      string
@@ -12,8 +14,7 @@ func newPlayer(id string, pages []buffer.Page) Player {
 	primitiveRecords := []int16{}
 
 	for i := 0; i < len(pages); i++ {
-		for j := 0; j < len(pages[i].Body); i++ {
-
+		for j := 0; j < len(pages[i].Body); j++ {
 			if pages[i].Body[j].Method == buffer.Add {
 				primitiveRecords = append(
 					primitiveRecords,
@@ -40,7 +41,6 @@ func newPlayer(id string, pages []buffer.Page) Player {
 
 func (p *Player) calculateElo() {
 	var result int16
-
 	for i := range p.records {
 		result += p.records[i]
 	}

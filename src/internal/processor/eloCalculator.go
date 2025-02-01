@@ -3,24 +3,21 @@ package processor
 const k int16 = 25
 
 type Calculator struct {
-	playerWinElo  int16
-	playerLoseElo int16
+	playerWinEloChange  int16
+	playerLoseEloChange int16
 }
 
 func NewCalculator(playerWin Player, playerLose Player) Calculator {
-	playerWinElo := playerWin.Elo + k
-	playerLoseElo := playerLose.Elo - k
-
 	return Calculator{
-		playerWinElo:  playerWinElo,
-		playerLoseElo: playerLoseElo,
+		playerWinEloChange:  k,
+		playerLoseEloChange: k,
 	}
 }
 
 func (c *Calculator) GetWinElo() int16 {
-	return c.playerWinElo
+	return c.playerWinEloChange
 }
 
 func (c *Calculator) GetLoseElo() int16 {
-	return c.playerLoseElo
+	return c.playerLoseEloChange
 }
