@@ -1,7 +1,6 @@
 package buffer
 
 import (
-	"delob/internal/utils"
 	"fmt"
 	"sync"
 )
@@ -16,22 +15,17 @@ func NewBufferManager() BufferManager {
 	return BufferManager{}
 }
 
-func (buffer *BufferManager) AddPlayer(entityId string) error {
+func (buffer *BufferManager) AddPlayer(entityId string, value int16) error {
 
 	// move it to processor?
 	if _, err := buffer.getPageAdresses(entityId); err == nil {
 		return fmt.Errorf("player already exists: %s", entityId)
 	}
 
+	pageAdress := buffer.addPage(entityId, value)
+
 	buffer.syncMutex.Lock()
 
-	record := Record{
-		Method: Add,
-		// TODO move it out of here
-		Value: utils.INITIAL_ELO,
-	}
-
-	pageAdress := buffer.addPage(entityId, record)
 	err := buffer.addPageToDictionary(entityId, pageAdress)
 	if err != nil {
 		return err
@@ -41,16 +35,18 @@ func (buffer *BufferManager) AddPlayer(entityId string) error {
 	return nil
 }
 
-func (buffer *BufferManager) UpdatePlayer(entityId string, record Record) error {
-	isAddedToExistingPage, errTryToAppend := buffer.tryAppendToPage(entityId, record)
+func (buffer *BufferManager) UpdatePlayer(entityId string, value int16) error {
+	isAddedToExistingPage, errTryToAppend := buffer.tryAppendToPage(entityId, value)
 	if errTryToAppend != nil {
 		return errTryToAppend
 	}
 
 	if !isAddedToExistingPage {
+		pageAdress := buffer.addPage(entityId, value)
+
 		buffer.syncMutex.Lock()
-		pageAdress := buffer.addPage(entityId, record)
-		errAppendPageToExistingKey := buffer.appendPageToExistingKey(entityId, pageAdress)
+
+		errAppendPageToExistingKey := buffer.appendPageToExistingId(entityId, pageAdress)
 		if errAppendPageToExistingKey != nil {
 			return errAppendPageToExistingKey
 		}
@@ -61,7 +57,7 @@ func (buffer *BufferManager) UpdatePlayer(entityId string, record Record) error 
 	return nil
 }
 
-func (buffer *BufferManager) GetPage(entityId string) ([]Page, error) {
+func (buffer *BufferManager) GetPages(entityId string) ([]Page, error) {
 	pageAdresses, err := buffer.getPageAdresses(entityId)
 	if err != nil {
 		return []Page{}, err
@@ -89,4 +85,24 @@ func (buffer *BufferManager) GetAllPages() ([]string, [][]Page, error) {
 	}
 
 	return entityIdsResult, pagesCollectionResult, nil
+}
+
+func (buffer *BufferManager) addPage(entityId string, value int16) *Page {
+	buffer.pages = append(buffer.pages, newPage(entityId, value))
+	return &buffer.pages[len(buffer.pages)-1]
+}
+
+func (buffer *BufferManager) tryAppendToPage(entityId string, value int16) (bool, error) {
+	pageAdresses, err := buffer.getPageAdresses(entityId)
+	if err != nil {
+		return false, err
+	}
+
+	for i := 0; i < len(pageAdresses); i++ {
+		if !pageAdresses[i].isPageFull() {
+			pageAdresses[i].append(value)
+			return true, nil
+		}
+	}
+	return false, nil
 }

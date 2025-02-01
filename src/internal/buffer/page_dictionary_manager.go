@@ -30,7 +30,7 @@ func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Pa
 	return nil
 }
 
-func (buffer *BufferManager) appendPageToExistingKey(entityId string, pageAdress *Page) error {
+func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress *Page) error {
 	hashedEntityId, err := hasher.Calculate(entityId)
 	if err != nil {
 		return err

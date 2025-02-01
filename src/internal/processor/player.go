@@ -15,19 +15,10 @@ func newPlayer(id string, pages []buffer.Page) Player {
 
 	for i := 0; i < len(pages); i++ {
 		for j := 0; j < len(pages[i].Body); j++ {
-			if pages[i].Body[j].Method == buffer.Add {
-				primitiveRecords = append(
-					primitiveRecords,
-					pages[i].Body[j].Value*1,
-				)
-			}
-
-			if pages[i].Body[j].Method == buffer.Subtract {
-				primitiveRecords = append(
-					primitiveRecords,
-					pages[i].Body[j].Value*-1,
-				)
-			}
+			primitiveRecords = append(
+				primitiveRecords,
+				pages[i].Body[j].Value,
+			)
 		}
 	}
 

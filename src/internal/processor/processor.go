@@ -3,6 +3,7 @@ package processor
 import (
 	buffer "delob/internal/buffer"
 	tokenizer "delob/internal/tokenizer"
+	"delob/internal/utils"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -117,12 +118,12 @@ func (p *Processor) updatePlayers(order tokenizer.TokenizedExpression) (string, 
 
 	calc := NewCalculator(playerWin, playerLose)
 
-	err1 := p.bufferManager.UpdatePlayer(playerWin.Id, buffer.Record{Method: buffer.Add, Value: calc.GetWinElo()})
+	err1 := p.bufferManager.UpdatePlayer(playerWin.Id, calc.GetWinElo())
 	if err1 != nil {
 		return "", err1
 	}
 
-	err2 := p.bufferManager.UpdatePlayer(playerLose.Id, buffer.Record{Method: buffer.Subtract, Value: calc.GetLoseElo()})
+	err2 := p.bufferManager.UpdatePlayer(playerLose.Id, calc.GetLoseElo())
 	if err2 != nil {
 		return "", err2
 	}
@@ -153,7 +154,7 @@ func (p *Processor) newPlayersPair(ids []string) (Player, Player, error) {
 }
 
 func (p *Processor) getPlayerById(entityId string) (Player, error) {
-	pages, err := p.bufferManager.GetPage(entityId)
+	pages, err := p.bufferManager.GetPages(entityId)
 	if err != nil {
 		return Player{}, err
 	}
@@ -189,7 +190,7 @@ func (p *Processor) addPlayer(order tokenizer.TokenizedExpression) (string, erro
 	var invalidEntityIds []string
 
 	for i := range order.Arguments {
-		err := p.bufferManager.AddPlayer(order.Arguments[i])
+		err := p.bufferManager.AddPlayer(order.Arguments[i], utils.INITIAL_ELO)
 		if err != nil {
 			isFullySuccessful = false
 			invalidEntityIds = append(invalidEntityIds, order.Arguments[i])

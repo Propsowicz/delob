@@ -11,6 +11,8 @@ type Page struct {
 }
 
 type Header struct {
+	isCached      bool
+	cachedValue   int16
 	entityId      string
 	lastModifed   int64
 	isLocked      bool
@@ -19,57 +21,39 @@ type Header struct {
 
 type Body [utils.PAGE_SIZE]Record
 
-type Method int8
-
-const (
-	Unknown  Method = iota
-	Add      Method = iota
-	Subtract Method = iota
-)
-
 type Record struct {
-	Method Method
-	Value  int16
+	IsUsed       bool
+	AddTimestamp int64
+	Value        int16
 }
 
 func (page *Page) isPageFull() bool {
 	return page.Header.lastUsedIndex+1 == utils.PAGE_SIZE
 }
 
-func (page *Page) append(record Record) {
-	page.Body[page.Header.lastUsedIndex+1] = record
+func (page *Page) append(value int16) {
+	page.Body[page.Header.lastUsedIndex+1] = newRecord(value)
 	page.Header.lastUsedIndex++
 }
 
-func (buffer *BufferManager) addPage(entityId string, record Record) *Page {
+func newPage(entityId string, value int16) Page {
 	newPage := Page{
 		Header: Header{
 			entityId:      entityId,
 			lastModifed:   time.Now().UTC().UnixMilli(),
-			isLocked:      true,
-			lastUsedIndex: -1,
+			isLocked:      false,
+			lastUsedIndex: 0,
 		},
-		Body: [utils.PAGE_SIZE]Record{},
+		Body: [utils.PAGE_SIZE]Record{newRecord(value)},
 	}
-	newPage.Body[newPage.Header.lastUsedIndex+1] = record
-	newPage.Header.isLocked = false
-	newPage.Header.lastUsedIndex = newPage.Header.lastUsedIndex + 1
 
-	buffer.pages = append(buffer.pages, newPage)
-	return &buffer.pages[len(buffer.pages)-1]
+	return newPage
 }
 
-func (buffer *BufferManager) tryAppendToPage(entityId string, record Record) (bool, error) {
-	pageAdresses, err := buffer.getPageAdresses(entityId)
-	if err != nil {
-		return false, err
+func newRecord(value int16) Record {
+	return Record{
+		IsUsed:       true,
+		AddTimestamp: time.Now().UnixMilli(),
+		Value:        value,
 	}
-
-	for i := 0; i < len(pageAdresses); i++ {
-		if !pageAdresses[i].isPageFull() {
-			pageAdresses[i].append(record)
-			return true, nil
-		}
-	}
-	return false, nil
 }

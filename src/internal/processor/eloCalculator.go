@@ -10,7 +10,7 @@ type Calculator struct {
 func NewCalculator(playerWin Player, playerLose Player) Calculator {
 	return Calculator{
 		playerWinEloChange:  k,
-		playerLoseEloChange: k,
+		playerLoseEloChange: -k,
 	}
 }
 
