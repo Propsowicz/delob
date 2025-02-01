@@ -1,10 +1,5 @@
 package tokenizer
 
-func selectAllTokenizer(expression string) ([]TokenizedExpression, error) {
-	return []TokenizedExpression{
-		TokenizedExpression{
-			ProcessMethod: SelectAll,
-			Arguments:     []string{},
-		},
-	}, nil
+func selectAllTokenizer(expression string) (interface{}, error) {
+	return SelectAllToken{}, nil
 }

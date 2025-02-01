@@ -9,6 +9,7 @@ type BufferManager struct {
 	syncMutex      sync.Mutex
 	pageDictionary PageDictionary
 	pages          []Page
+	matches        []MatchEvent
 }
 
 func NewBufferManager() BufferManager {

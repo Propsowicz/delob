@@ -5,26 +5,39 @@ import (
 	"strings"
 )
 
-func addPlayerTokenizer(expression string) ([]TokenizedExpression, error) {
-	args, err := extractArgumentsForAddPlayerMethod(expression)
-	if err != nil {
-		return []TokenizedExpression{}, err
+const addSinglePlayerExpression string = "ADD PLAYER "
+const addMultiplePlayersExpression string = "ADD PLAYERS "
+
+func tokenizeAddPlayersExpression(expression string) (interface{}, error) {
+	var result []string
+	var err error
+
+	if strings.HasPrefix(strings.ToUpper(expression), addSinglePlayerExpression) {
+		result, err = extractArgumentsForAddPlayerMethod(expression, addSinglePlayerExpression)
+		if err != nil {
+			return nil, err
+		}
+		if len(result) != 1 {
+			return nil, fmt.Errorf("delob: incorrect syntax - tried to add multiple players with 'ADD PLAYER' expression")
+		}
+	}
+	if strings.HasPrefix(strings.ToUpper(expression), addMultiplePlayersExpression) {
+		result, err = extractArgumentsForAddPlayerMethod(expression, addMultiplePlayersExpression)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return []TokenizedExpression{
-			{
-				ProcessMethod: AddPlayer,
-				Arguments:     args,
-			},
-		},
-		nil
+	return AddPlayersToken{
+		Keys: result,
+	}, nil
 }
 
-func extractArgumentsForAddPlayerMethod(expression string) ([]string, error) {
+func extractArgumentsForAddPlayerMethod(expression string, prefix string) ([]string, error) {
 	var result []string
 
-	expressionArguments := expression[len(addPlayerMethod):]
-	rawArgs := strings.Split(expressionArguments, ",")
+	expressionArguments := expression[len(prefix):]
+	rawArgs := strings.Split(tryExtractExpressionFromBrackets(expressionArguments), ",")
 
 	for i := range rawArgs {
 		id, err := extractIdFromString(rawArgs[i])

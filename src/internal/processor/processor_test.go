@@ -35,7 +35,7 @@ func Test_IfCanAddOnePlayer(t *testing.T) {
 func Test_IfCanAddTwoPlayers(t *testing.T) {
 	bufferManager := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
-	expressionMock := "ADD PLAYER 'Tomek', 'Romek';"
+	expressionMock := "ADD PLAYERS ('Tomek', 'Romek');"
 
 	result, err := p.Execute(expressionMock)
 
@@ -51,7 +51,7 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	bufferManager := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	firstExpressionMock := "ADD PLAYER 'Tomek';"
-	secondExpressionMock := "ADD PLAYER 'Tomek', 'Romek';"
+	secondExpressionMock := "ADD PLAYERS ('Tomek', 'Romek' );"
 
 	result1, err1 := p.Execute(firstExpressionMock)
 	result2, err2 := p.Execute(secondExpressionMock)

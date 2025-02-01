@@ -20,41 +20,44 @@ func Test_IfCanAddPlayer(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expression should not return error.")
 	}
-	if len(result) != 1 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(result))
+
+	token := result.(AddPlayersToken)
+
+	if len(token.Keys) != 1 {
+		t.Errorf("Expected: %d, got: %d.", 1, len(token.Keys))
 	}
-	if result[0].ProcessMethod != AddPlayer {
-		t.Errorf("Expected: %d, got: %d.", AddPlayer, result[0].ProcessMethod)
+	if token.Keys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.Keys[0])
 	}
-	if len(result[0].Arguments) != 1 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(result[0].Arguments))
-	}
-	if result[0].Arguments[0] != "Tomek" {
-		t.Errorf("Expected: %s, got: %s.", "Tomek", result[0].Arguments[0])
+}
+
+func Test_IfSyntaxForAddingMutlipleUsersIsCorrect(t *testing.T) {
+	callStringMock := "ADD PLAYER 'Tomek', 'Romek';"
+	_, err := Tokenize(callStringMock)
+
+	if err == nil {
+		t.Errorf("Expression should return error.")
 	}
 }
 
 func Test_IfCanAddTwoPlayers(t *testing.T) {
-	callStringMock := "ADD PLAYER 'Tomek', 'Romek';"
+	callStringMock := "ADD PLAYERS ('Tomek', 'Romek');"
 	result, err := Tokenize(callStringMock)
 
 	if err != nil {
 		t.Errorf("Expression should not return error.")
 	}
-	if len(result) != 1 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(result))
+
+	token := result.(AddPlayersToken)
+
+	if len(token.Keys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.Keys))
 	}
-	if result[0].ProcessMethod != AddPlayer {
-		t.Errorf("Expected: %d, got: %d.", AddPlayer, result[0].ProcessMethod)
+	if token.Keys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.Keys[0])
 	}
-	if len(result[0].Arguments) != 2 {
-		t.Errorf("Expected: %d, got: %d.", 2, len(result[0].Arguments))
-	}
-	if result[0].Arguments[0] != "Tomek" {
-		t.Errorf("Expected: %s, got: %s.", "Tomek", result[0].Arguments[0])
-	}
-	if result[0].Arguments[1] != "Romek" {
-		t.Errorf("Expected: %s, got: %s.", "Romek", result[0].Arguments[0])
+	if token.Keys[1] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.Keys[1])
 	}
 }
 
@@ -76,32 +79,56 @@ func Test_IfCanNotUpdateIndividualPlayerData(t *testing.T) {
 	}
 }
 
-func Test_IfCanUpdatePlayersData(t *testing.T) {
+func Test_IfCanAddMatchEventForTwoPlayers(t *testing.T) {
 	expressionMock := "SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';"
 	result, err := Tokenize(expressionMock)
 
 	if err != nil {
 		t.Errorf("Expression should not return error.")
 	}
-	if len(result) != 1 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(result))
+
+	token := result.(UpdatePlayersToken)
+
+	if len(token.WinKeys) != 1 {
+		t.Errorf("Expected: %d, got: %d.", 1, len(token.WinKeys))
 	}
-	if result[0].ProcessMethod != UpdatePlayers {
-		t.Errorf("Expected: %d, got: %d.", UpdatePlayers, result[0].ProcessMethod)
+	if len(token.LoseKeys) != 1 {
+		t.Errorf("Expected: %d, got: %d.", 1, len(token.LoseKeys))
 	}
-	if len(result[0].Arguments) != 4 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(result[0].Arguments))
+	if token.WinKeys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.WinKeys[0])
 	}
-	if result[0].Arguments[0] != "WIN" {
-		t.Errorf("Expected: %s, got: %s.", "WIN", result[0].Arguments[0])
+	if token.LoseKeys[0] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.LoseKeys[0])
 	}
-	if result[0].Arguments[1] != "Tomek" {
-		t.Errorf("Expected: %s, got: %s.", "Tomek", result[0].Arguments[1])
+}
+
+func Test_IfCanAddMatchEventForMultiplePlayers(t *testing.T) {
+	expressionMock := "SET WIN FOR ('Tomek', 'Joe') AND LOSE FOR ('Romek','John');"
+	result, err := Tokenize(expressionMock)
+
+	if err != nil {
+		t.Errorf("Expression should not return error.")
 	}
-	if result[0].Arguments[2] != "LOSE" {
-		t.Errorf("Expected: %s, got: %s.", "LOSE", result[0].Arguments[2])
+
+	token := result.(UpdatePlayersToken)
+
+	if len(token.WinKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.WinKeys))
 	}
-	if result[0].Arguments[3] != "Romek" {
-		t.Errorf("Expected: %s, got: %s.", "Romek", result[0].Arguments[3])
+	if len(token.LoseKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.LoseKeys))
+	}
+	if token.WinKeys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.WinKeys[0])
+	}
+	if token.WinKeys[1] != "Joe" {
+		t.Errorf("Expected: %s, got: %s.", "Joe", token.WinKeys[1])
+	}
+	if token.LoseKeys[0] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.LoseKeys[0])
+	}
+	if token.LoseKeys[1] != "John" {
+		t.Errorf("Expected: %s, got: %s.", "John", token.LoseKeys[1])
 	}
 }

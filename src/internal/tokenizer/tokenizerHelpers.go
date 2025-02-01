@@ -13,22 +13,20 @@ func sanitazeExpression(expression string) (string, error) {
 	return expression[:len(expression)-1], nil
 }
 
+func tryExtractExpressionFromBrackets(expression string) string {
+	expression = strings.TrimSpace(expression)
+
+	if expression[0] == '(' && expression[len(expression)-1] == ')' {
+		return expression[1 : len(expression)-1]
+	}
+	return expression
+}
+
 func extractIdFromString(rawString string) (string, error) {
 	str := strings.TrimSpace(rawString)
 	if strings.HasPrefix(str, "'") && strings.HasSuffix(str, "'") {
 		return str[1 : len(str)-1], nil
 	} else {
 		return "", errors.New("delob error: Key not enclosed in parentheses: " + rawString)
-	}
-}
-
-func convertStringToProcessMethod(str string) (ProcessMethod, error) {
-	switch str {
-	case "0":
-		return AddPlayer, nil
-	case "1":
-		return UpdatePlayers, nil
-	default:
-		return AddPlayer, fmt.Errorf("cannot convert string to ProcessMethod enum")
 	}
 }

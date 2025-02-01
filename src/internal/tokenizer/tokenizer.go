@@ -5,47 +5,44 @@ import (
 	"strings"
 )
 
-// ADD PLAYER 'Tomek', 'Romek';
-// SET WIN FOR 'Tomek' AND LOSE FOR 'Romek'; - i dont like it
-// SELECT
-
-type TokenizedExpression struct {
-	ProcessMethod ProcessMethod
-	Arguments     []string
+type Token interface {
 }
 
-type ProcessMethod int8
+type AddPlayersToken struct {
+	Keys []string
+}
 
-const (
-	AddPlayer ProcessMethod = iota
-	UpdatePlayers
-	SelectAll
-)
+type UpdatePlayersToken struct {
+	WinKeys  []string
+	LoseKeys []string
+}
 
-const addPlayerMethod string = "ADD PLAYER "
-const setWinMethod string = "SET WIN FOR "
-const setLoseMethod string = "SET LOSE FOR "
-const selectAll string = "SELECT ALL"
+type SelectAllToken struct{}
 
-func Tokenize(expression string) ([]TokenizedExpression, error) {
-	expression, err := sanitazeExpression(expression)
+const addPlayerExpression string = "ADD PLAYER"
+const setWinExpression string = "SET WIN FOR "
+const setLoseExpression string = "SET LOSE FOR "
+const selectAllExpression string = "SELECT ALL"
+
+func Tokenize(expression string) (interface{}, error) {
+	sanitazedExpression, err := sanitazeExpression(expression)
 	if err != nil {
-		return []TokenizedExpression{}, err
+		return nil, err
 	}
 
-	if strings.HasPrefix(strings.ToUpper(expression), addPlayerMethod) {
-		return addPlayerTokenizer(expression)
+	if strings.HasPrefix(strings.ToUpper(sanitazedExpression), addPlayerExpression) {
+		return tokenizeAddPlayersExpression(sanitazedExpression)
 	}
 
-	if strings.HasPrefix(strings.ToUpper(expression), setWinMethod) ||
-		strings.HasPrefix(strings.ToUpper(expression), setLoseMethod) {
-		return updatePlayerTokenizer(expression)
+	if strings.HasPrefix(strings.ToUpper(sanitazedExpression), setWinExpression) ||
+		strings.HasPrefix(strings.ToUpper(sanitazedExpression), setLoseExpression) {
+		return tokenizeUpdatePlayerExpression(sanitazedExpression)
 	}
 
-	if strings.ToUpper(expression) == selectAll {
-		return selectAllTokenizer(expression)
+	if strings.ToUpper(sanitazedExpression) == selectAllExpression {
+		return selectAllTokenizer(sanitazedExpression)
 	}
 
-	return []TokenizedExpression{},
-		fmt.Errorf("delob error: Could not parse given expression: %s", expression)
+	return nil,
+		fmt.Errorf("delob error: Could not parse given expression: %s", sanitazedExpression)
 }

@@ -60,35 +60,34 @@ func (p *Processor) Execute(
 
 }
 
-func (p *Processor) handleOrders(orders []tokenizer.TokenizedExpression) (string, error) {
+func (p *Processor) handleOrders(orders interface{}) (string, error) {
 	var result string = ""
 	var orderError error
 
-	for _, order := range orders {
-		if order.ProcessMethod == tokenizer.AddPlayer {
-			result, orderError = p.addPlayer(order)
-			if orderError != nil {
-				return result, orderError
-			}
+	switch v := orders.(type) {
+	case tokenizer.AddPlayersToken:
+		result, orderError = p.addPlayer(v.Keys)
+		if orderError != nil {
+			return result, orderError
 		}
-		if order.ProcessMethod == tokenizer.UpdatePlayers {
-			result, orderError = p.updatePlayers(order)
-			if orderError != nil {
-				return result, orderError
-			}
+	case tokenizer.UpdatePlayersToken:
+		result, orderError = p.updatePlayers(v.WinKeys, v.LoseKeys)
+		if orderError != nil {
+			return result, orderError
 		}
-		if order.ProcessMethod == tokenizer.SelectAll {
-			result, orderError = p.selectAll(order)
-			if orderError != nil {
-				return result, orderError
-			}
+	case tokenizer.SelectAllToken:
+		result, orderError = p.selectAll()
+		if orderError != nil {
+			return result, orderError
 		}
+	default:
+		fmt.Printf("unexpected type %T", v)
 	}
 
 	return result, nil
 }
 
-func (p *Processor) selectAll(order tokenizer.TokenizedExpression) (string, error) {
+func (p *Processor) selectAll() (string, error) {
 	allEntities, pagesCollections, err := p.bufferManager.GetAllPages()
 	if err != nil {
 		return "", err
@@ -107,11 +106,10 @@ func (p *Processor) selectAll(order tokenizer.TokenizedExpression) (string, erro
 	return string(jsonResult), nil
 }
 
-func (p *Processor) updatePlayers(order tokenizer.TokenizedExpression) (string, error) {
+func (p *Processor) updatePlayers(winKeys []string, loseKeys []string) (string, error) {
 
-	playerWin, playerLose, err := p.newPlayersPair(order.Arguments)
-	fmt.Println(playerWin)
-	fmt.Println(playerLose)
+	winPlayers, losePlayers, err := p.loadPlayersToUpdate(winKeys, loseKeys)
+
 	if err != nil {
 		return "", err
 	}
@@ -131,26 +129,25 @@ func (p *Processor) updatePlayers(order tokenizer.TokenizedExpression) (string, 
 	return affectNumberOfRowsMessage(2), nil
 }
 
-func (p *Processor) newPlayersPair(ids []string) (Player, Player, error) {
-	playerWin, playerLose := Player{}, Player{}
+func (p *Processor) loadPlayersToUpdate(winKeys []string, loseKeys []string) ([]Player, []Player, error) {
+	winPlayers, losePlayers := []Player{}, []Player{}
 
-	playerWinId, playerLoseId, err := p.extractPlayerIds(ids)
-	if err != nil {
-		return Player{}, Player{}, err
+	for i := range winKeys {
+		player, errWin := p.getPlayerById(winKeys[i])
+		if errWin != nil {
+			return winPlayers, losePlayers, errWin
+		}
+		winPlayers = append(winPlayers, player)
 	}
 
-	playerWin, errWin := p.getPlayerById(playerWinId)
-	if errWin != nil {
-
-		return playerWin, playerLose, errWin
+	for i := range loseKeys {
+		player, errLose := p.getPlayerById(loseKeys[i])
+		if errLose != nil {
+			return winPlayers, losePlayers, errLose
+		}
+		losePlayers = append(losePlayers, player)
 	}
-
-	playerLose, errLose := p.getPlayerById(playerLoseId)
-	if errLose != nil {
-		return playerWin, playerLose, errLose
-	}
-
-	return playerWin, playerLose, nil
+	return winPlayers, losePlayers, nil
 }
 
 func (p *Processor) getPlayerById(entityId string) (Player, error) {
@@ -184,16 +181,16 @@ func (p *Processor) extractPlayerIds(args []string) (string, string, error) {
 	return playerWin, playerLose, nil
 }
 
-func (p *Processor) addPlayer(order tokenizer.TokenizedExpression) (string, error) {
+func (p *Processor) addPlayer(order []string) (string, error) {
 	var numberOfAddedPlayers int16
 	var isFullySuccessful bool = true
 	var invalidEntityIds []string
 
-	for i := range order.Arguments {
-		err := p.bufferManager.AddPlayer(order.Arguments[i], utils.INITIAL_ELO)
+	for i := range order {
+		err := p.bufferManager.AddPlayer(order[i], utils.INITIAL_ELO)
 		if err != nil {
 			isFullySuccessful = false
-			invalidEntityIds = append(invalidEntityIds, order.Arguments[i])
+			invalidEntityIds = append(invalidEntityIds, order[i])
 			continue
 		}
 		numberOfAddedPlayers++

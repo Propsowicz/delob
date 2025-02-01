@@ -5,29 +5,21 @@ import (
 	"strings"
 )
 
-func updatePlayerTokenizer(expression string) ([]TokenizedExpression, error) {
-	result := []TokenizedExpression{}
+func tokenizeUpdatePlayerExpression(expression string) (interface{}, error) {
 	splitedUpdateExpression, err := splitUpdateExpression(expression)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	var args []string
-
-	for i := range splitedUpdateExpression {
-		arg, errExtract := extractArgumentsForUpdatePlayerMethod(splitedUpdateExpression[i])
-		if errExtract != nil {
-			return result, errExtract
-		}
-		args = append(args, arg[0])
-		args = append(args, arg[1])
+	winKeys, loseKeys, errExtract := extractArgumentsForUpdatePlayerMethod(splitedUpdateExpression)
+	if errExtract != nil {
+		return nil, errExtract
 	}
 
-	result = append(result, TokenizedExpression{
-		ProcessMethod: UpdatePlayers,
-		Arguments:     args,
-	})
-	return result, nil
+	return UpdatePlayersToken{
+		WinKeys:  winKeys,
+		LoseKeys: loseKeys,
+	}, nil
 }
 
 func splitUpdateExpression(expression string) ([]string, error) {
@@ -39,29 +31,42 @@ func splitUpdateExpression(expression string) ([]string, error) {
 	return splittedExpression, nil
 }
 
-func extractArgumentsForUpdatePlayerMethod(expression string) ([]string, error) {
+func extractArgumentsForUpdatePlayerMethod(expressions []string) ([]string, []string, error) {
+	var winKeys, loseKeys []string
+	var errWinKeys, errLoseKeys error
+
+	for i := range expressions {
+		expressionArgs := strings.Split(strings.TrimSpace(expressions[i]), "FOR")
+
+		switch strings.ToUpper(expressionArgs[0]) {
+		case "SET WIN ", "WIN ":
+			winKeys, errWinKeys = extractKeysFromPartialExpression(expressionArgs[1])
+			if errWinKeys != nil {
+				return winKeys, loseKeys, errWinKeys
+			}
+
+		case "SET LOSE ", "LOSE ":
+			loseKeys, errLoseKeys = extractKeysFromPartialExpression(expressionArgs[1])
+			if errLoseKeys != nil {
+				return winKeys, loseKeys, errLoseKeys
+			}
+		}
+	}
+	return winKeys, loseKeys, nil
+}
+
+func extractKeysFromPartialExpression(partialExpression string) ([]string, error) {
 	var result []string
+	keys := strings.Split(tryExtractExpressionFromBrackets(partialExpression), ",")
 
-	expressionArgs := strings.Split(strings.TrimSpace(expression), " ")
-	expressionArgument := expressionArgs[len(expressionArgs)-1]
+	for i := range keys {
+		key, err := extractIdFromString(strings.TrimSpace(keys[i]))
+		if err != nil {
+			return nil, err
+		}
 
-	switch strings.ToUpper(expressionArgs[len(expressionArgs)-3]) {
-	case "WIN":
-		result = append(result, "WIN")
-	case "LOSE":
-		result = append(result, "LOSE")
+		result = append(result, key)
+
 	}
-
-	id, err := extractIdFromString(expressionArgument)
-	if err != nil {
-		return result, err
-	}
-	result = append(result, id)
-
-	if len(result) > 0 {
-		return result, nil
-	}
-
-	return result,
-		fmt.Errorf("delob error: Could not extract arguments from expression: %s", expression)
+	return result, nil
 }
