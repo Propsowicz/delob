@@ -2,6 +2,9 @@ package processor
 
 import (
 	buffer "delob/internal/buffer"
+	elo "delob/internal/processor/elo"
+	dto "delob/internal/processor/model"
+	"delob/internal/shared"
 	tokenizer "delob/internal/tokenizer"
 	"delob/internal/utils"
 	"encoding/json"
@@ -70,8 +73,8 @@ func (p *Processor) handleOrders(orders interface{}) (string, error) {
 		if orderError != nil {
 			return result, orderError
 		}
-	case tokenizer.UpdatePlayersToken:
-		result, orderError = p.updatePlayers(v.WinKeys, v.LoseKeys)
+	case tokenizer.AddMatchToken:
+		result, orderError = p.updatePlayers(v.TeamOneKeys, v.TeamTwoKeys, v.MatchResult)
 		if orderError != nil {
 			return result, orderError
 		}
@@ -92,11 +95,11 @@ func (p *Processor) selectAll() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	playersCollection := []Player{}
+	playersCollection := []dto.Player{}
 
 	for i := 0; i < len(allEntities); i++ {
 		playersCollection = append(playersCollection,
-			newPlayer(allEntities[i], pagesCollections[i]))
+			dto.NewPlayer(allEntities[i], pagesCollections[i]))
 	}
 	jsonResult, errMarshal := json.Marshal(playersCollection)
 	if errMarshal != nil {
@@ -106,56 +109,53 @@ func (p *Processor) selectAll() (string, error) {
 	return string(jsonResult), nil
 }
 
-func (p *Processor) updatePlayers(winKeys []string, loseKeys []string) (string, error) {
-
-	winPlayers, losePlayers, err := p.loadPlayersToUpdate(winKeys, loseKeys)
-
+func (p *Processor) updatePlayers(winKeys []string, loseKeys []string, matchResult shared.MatchResult) (string, error) {
+	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(winKeys, loseKeys)
 	if err != nil {
 		return "", err
 	}
 
-	calc := NewCalculator(playerWin, playerLose)
+	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, matchResult)
 
-	err1 := p.bufferManager.UpdatePlayer(playerWin.Id, calc.GetWinElo())
-	if err1 != nil {
-		return "", err1
+	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(dto.MapPlayerToKeysCollection(teamOnePlayers), calc.TeamOneEloLambda())
+	if errTeamOneUpdate != nil {
+		return "", errTeamOneUpdate
+	}
+	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(dto.MapPlayerToKeysCollection(teamTwoPlayers), calc.TeamTwoEloLambda())
+	if errTeamTwoUpdate != nil {
+		return "", errTeamTwoUpdate
 	}
 
-	err2 := p.bufferManager.UpdatePlayer(playerLose.Id, calc.GetLoseElo())
-	if err2 != nil {
-		return "", err2
-	}
-
-	return affectNumberOfRowsMessage(2), nil
+	return affectNumberOfRowsMessage(int16(len(teamOnePlayers) + len(teamTwoPlayers))), nil
 }
 
-func (p *Processor) loadPlayersToUpdate(winKeys []string, loseKeys []string) ([]Player, []Player, error) {
-	winPlayers, losePlayers := []Player{}, []Player{}
+func (p *Processor) loadPlayersToUpdate(teamOneKeys []string, teamTwoKeys []string) ([]dto.Player, []dto.Player, error) {
+	teamOnePlayers, teamTwoPlayers := []dto.Player{}, []dto.Player{}
 
-	for i := range winKeys {
-		player, errWin := p.getPlayerById(winKeys[i])
+	for i := range teamOneKeys {
+		player, errWin := p.getPlayerById(teamOneKeys[i])
 		if errWin != nil {
-			return winPlayers, losePlayers, errWin
+			return teamOnePlayers, teamTwoPlayers, errWin
 		}
-		winPlayers = append(winPlayers, player)
+		teamOnePlayers = append(teamOnePlayers, player)
 	}
 
-	for i := range loseKeys {
-		player, errLose := p.getPlayerById(loseKeys[i])
+	for i := range teamTwoKeys {
+		player, errLose := p.getPlayerById(teamTwoKeys[i])
 		if errLose != nil {
-			return winPlayers, losePlayers, errLose
+			return teamOnePlayers, teamTwoPlayers, errLose
 		}
-		losePlayers = append(losePlayers, player)
+		teamTwoPlayers = append(teamTwoPlayers, player)
 	}
-	return winPlayers, losePlayers, nil
+	return teamOnePlayers, teamTwoPlayers, nil
 }
 
-func (p *Processor) getPlayerById(entityId string) (Player, error) {
+func (p *Processor) getPlayerById(entityId string) (dto.Player, error) {
 	pages, err := p.bufferManager.GetPages(entityId)
 	if err != nil {
-		return Player{}, err
+		return dto.Player{}, err
 	}
-	return newPlayer(entityId, pages), nil
+	return dto.NewPlayer(entityId, pages), nil
 }
 
 func (p *Processor) extractPlayerIds(args []string) (string, string, error) {

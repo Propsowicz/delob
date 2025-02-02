@@ -1,6 +1,7 @@
 package tokenizer
 
 import (
+	"delob/internal/shared"
 	"testing"
 )
 
@@ -87,19 +88,22 @@ func Test_IfCanAddMatchEventForTwoPlayers(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(UpdatePlayersToken)
+	token := result.(AddMatchToken)
 
-	if len(token.WinKeys) != 1 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(token.WinKeys))
+	if token.MatchResult != shared.TeamOneWins {
+		t.Errorf("Expected: %d, got: %d.", shared.TeamOneWins, token.MatchResult)
 	}
-	if len(token.LoseKeys) != 1 {
-		t.Errorf("Expected: %d, got: %d.", 1, len(token.LoseKeys))
+	if len(token.TeamOneKeys) != 1 {
+		t.Errorf("Expected: %d, got: %d.", 1, len(token.TeamOneKeys))
 	}
-	if token.WinKeys[0] != "Tomek" {
-		t.Errorf("Expected: %s, got: %s.", "Tomek", token.WinKeys[0])
+	if len(token.TeamTwoKeys) != 1 {
+		t.Errorf("Expected: %d, got: %d.", 1, len(token.TeamTwoKeys))
 	}
-	if token.LoseKeys[0] != "Romek" {
-		t.Errorf("Expected: %s, got: %s.", "Romek", token.LoseKeys[0])
+	if token.TeamOneKeys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.TeamOneKeys[0])
+	}
+	if token.TeamTwoKeys[0] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.TeamTwoKeys[0])
 	}
 }
 
@@ -111,24 +115,93 @@ func Test_IfCanAddMatchEventForMultiplePlayers(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(UpdatePlayersToken)
+	token := result.(AddMatchToken)
 
-	if len(token.WinKeys) != 2 {
-		t.Errorf("Expected: %d, got: %d.", 2, len(token.WinKeys))
+	if token.MatchResult != shared.TeamOneWins {
+		t.Errorf("Expected: %d, got: %d.", shared.TeamOneWins, token.MatchResult)
 	}
-	if len(token.LoseKeys) != 2 {
-		t.Errorf("Expected: %d, got: %d.", 2, len(token.LoseKeys))
+	if len(token.TeamOneKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.TeamOneKeys))
 	}
-	if token.WinKeys[0] != "Tomek" {
-		t.Errorf("Expected: %s, got: %s.", "Tomek", token.WinKeys[0])
+	if len(token.TeamTwoKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.TeamTwoKeys))
 	}
-	if token.WinKeys[1] != "Joe" {
-		t.Errorf("Expected: %s, got: %s.", "Joe", token.WinKeys[1])
+	if token.TeamOneKeys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.TeamOneKeys[0])
 	}
-	if token.LoseKeys[0] != "Romek" {
-		t.Errorf("Expected: %s, got: %s.", "Romek", token.LoseKeys[0])
+	if token.TeamOneKeys[1] != "Joe" {
+		t.Errorf("Expected: %s, got: %s.", "Joe", token.TeamOneKeys[1])
 	}
-	if token.LoseKeys[1] != "John" {
-		t.Errorf("Expected: %s, got: %s.", "John", token.LoseKeys[1])
+	if token.TeamTwoKeys[0] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.TeamTwoKeys[0])
+	}
+	if token.TeamTwoKeys[1] != "John" {
+		t.Errorf("Expected: %s, got: %s.", "John", token.TeamTwoKeys[1])
+	}
+}
+
+func Test_IfCanAddMatchEventForMultiplePlayersWithReverterOrder(t *testing.T) {
+	expressionMock := "SET LOSE FOR ('Tomek', 'Joe') AND WIN FOR ('Romek','John');"
+	result, err := Tokenize(expressionMock)
+
+	if err != nil {
+		t.Errorf("Expression should not return error.")
+	}
+
+	token := result.(AddMatchToken)
+
+	if token.MatchResult != shared.TeamTwoWins {
+		t.Errorf("Expected: %d, got: %d.", shared.TeamTwoWins, token.MatchResult)
+	}
+	if len(token.TeamOneKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.TeamOneKeys))
+	}
+	if len(token.TeamTwoKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.TeamTwoKeys))
+	}
+	if token.TeamOneKeys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.TeamOneKeys[0])
+	}
+	if token.TeamOneKeys[1] != "Joe" {
+		t.Errorf("Expected: %s, got: %s.", "Joe", token.TeamOneKeys[1])
+	}
+	if token.TeamTwoKeys[0] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.TeamTwoKeys[0])
+	}
+	if token.TeamTwoKeys[1] != "John" {
+		t.Errorf("Expected: %s, got: %s.", "John", token.TeamTwoKeys[1])
+	}
+}
+
+func Test_IfCanAddMatchEventForMultiplePlayersWithDrawBetweenThem(t *testing.T) {
+	expressionMock := "SET DRAW BETWEEN ('Tomek', 'Joe') AND ('Romek','John');"
+	result, err := Tokenize(expressionMock)
+
+	if err != nil {
+		t.Errorf("Expression should not return error.")
+	}
+
+	token := result.(AddMatchToken)
+
+	if token.MatchResult != shared.Draw {
+		t.Errorf("Expected: %d, got: %d.", shared.Draw, token.MatchResult)
+	}
+	if len(token.TeamOneKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.TeamOneKeys))
+	}
+	if len(token.TeamTwoKeys) != 2 {
+		t.Errorf("Expected: %d, got: %d.", 2, len(token.TeamTwoKeys))
+	}
+	if token.TeamOneKeys[0] != "Tomek" {
+		t.Errorf("Expected: %s, got: %s.", "Tomek", token.TeamOneKeys[0])
+	}
+	if token.TeamOneKeys[1] != "Joe" {
+		t.Errorf("Expected: %s, got: %s.", "Joe", token.TeamOneKeys[1])
+	}
+	if token.TeamTwoKeys[0] != "Romek" {
+		t.Errorf("Expected: %s, got: %s.", "Romek", token.TeamTwoKeys[0])
+	}
+	if token.TeamTwoKeys[1] != "John" {
+		t.Errorf("Expected: %s, got: %s.", "John", token.TeamTwoKeys[1])
 	}
 }

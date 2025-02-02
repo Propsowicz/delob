@@ -147,3 +147,25 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 		t.Errorf("incorrect result - %s", result)
 	}
 }
+
+func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("ADD PLAYER 'Tomek';")
+	p.Execute("ADD PLAYER 'Romek';")
+	p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	p.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
+	p.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
+	p.Execute("SET DRAW BETWEEN 'Romek' AND 'Tomek';")
+
+	result, err := p.Execute("SELECT ALL;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+	if result != "[{\"Id\":\"Tomek\",\"Elo\":1325},{\"Id\":\"Romek\",\"Elo\":1275}]" {
+		t.Errorf("incorrect result - %s", result)
+	}
+}

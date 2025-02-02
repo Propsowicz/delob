@@ -36,6 +36,16 @@ func (buffer *BufferManager) AddPlayer(entityId string, value int16) error {
 	return nil
 }
 
+func (buffer *BufferManager) UpdatePlayersElo(entityKeys []string, eloLambda int16) error {
+	for i := range entityKeys {
+		err := buffer.UpdatePlayer(entityKeys[i], eloLambda)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (buffer *BufferManager) UpdatePlayer(entityId string, value int16) error {
 	isAddedToExistingPage, errTryToAppend := buffer.tryAppendToPage(entityId, value)
 	if errTryToAppend != nil {
