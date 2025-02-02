@@ -1,4 +1,9 @@
 package utils
 
+import "time"
+
 const PAGE_SIZE int16 = 512
-const INITIAL_ELO int16 = 1300
+
+func Timestamp() int64 {
+	return time.Now().UnixMilli()
+}

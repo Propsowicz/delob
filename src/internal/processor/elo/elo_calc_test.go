@@ -39,7 +39,7 @@ func Test_IfCanCalculateCorrectEloForDecisiveResultAndTheSameStartingElo(t *test
 
 	calc := NewCalculator(teamOne, teamTwo, result)
 
-	var expectedTeamOneLambda int16 = 12
+	var expectedTeamOneLambda int16 = 16
 	var expectedTeamTwoLambda int16 = -expectedTeamOneLambda
 
 	if are_not_equal(calc.TeamOneEloLambda(), expectedTeamOneLambda) {
@@ -75,7 +75,7 @@ func Test_IfCanCalculateCorrectEloForDecisiveResultAndDifferentStartingElo_Winne
 
 	calc := NewCalculator(teamOne, teamTwo, result)
 
-	var expectedTeamOneLambda int16 = -23
+	var expectedTeamOneLambda int16 = -30
 	var expectedTeamTwoLambda int16 = -expectedTeamOneLambda
 
 	if are_not_equal(calc.TeamOneEloLambda(), expectedTeamOneLambda) {

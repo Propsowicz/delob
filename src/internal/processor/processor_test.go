@@ -3,6 +3,8 @@ package processor
 import (
 	buffer "delob/internal/buffer"
 	"testing"
+
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func Test_IfCanNotTokenizeExpressionWithoutSemicolonEnds(t *testing.T) {
@@ -30,6 +32,7 @@ func Test_IfCanAddOnePlayer(t *testing.T) {
 	if result != "1 row(s) affected" {
 		t.Errorf("Adding should affect 1 row.")
 	}
+	snaps.MatchSnapshot(t, result)
 }
 
 func Test_IfCanAddTwoPlayers(t *testing.T) {
@@ -45,6 +48,7 @@ func Test_IfCanAddTwoPlayers(t *testing.T) {
 	if result != "2 row(s) affected" {
 		t.Errorf("Adding should affect 2 rows.")
 	}
+	snaps.MatchSnapshot(t, result)
 }
 
 func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
@@ -69,6 +73,8 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	if result2 != "1 row(s) affected" {
 		t.Errorf("Adding should affect 1 row.")
 	}
+	snaps.MatchSnapshot(t, result1)
+	snaps.MatchSnapshot(t, result2)
 }
 
 func Test_IfCannotUpdateWhenIdDoesnNotExists_Case1(t *testing.T) {
@@ -107,9 +113,7 @@ func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
 	if err != nil {
 		t.Errorf("Should not throw error.")
 	}
-	if result != "[{\"Id\":\"Tomek\",\"Elo\":1300}]" {
-		t.Errorf("incorrect result - %s", result)
-	}
+	snaps.MatchSnapshot(t, result)
 }
 
 func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
@@ -123,9 +127,7 @@ func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
 	if err != nil {
 		t.Errorf("Should not throw error.")
 	}
-	if result != "[{\"Id\":\"Tomek\",\"Elo\":1300},{\"Id\":\"Romek\",\"Elo\":1300}]" {
-		t.Errorf("incorrect result - %s", result)
-	}
+	snaps.MatchSnapshot(t, result)
 }
 
 func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
@@ -143,9 +145,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 	if err != nil {
 		t.Errorf("Should not throw error.")
 	}
-	if result != "[{\"Id\":\"Tomek\",\"Elo\":1325},{\"Id\":\"Romek\",\"Elo\":1275}]" {
-		t.Errorf("incorrect result - %s", result)
-	}
+	snaps.MatchSnapshot(t, result)
 }
 
 func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
@@ -165,7 +165,5 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 	if err != nil {
 		t.Errorf("Should not throw error.")
 	}
-	if result != "[{\"Id\":\"Tomek\",\"Elo\":1325},{\"Id\":\"Romek\",\"Elo\":1275}]" {
-		t.Errorf("incorrect result - %s", result)
-	}
+	snaps.MatchSnapshot(t, result)
 }

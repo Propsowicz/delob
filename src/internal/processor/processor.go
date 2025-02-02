@@ -6,7 +6,6 @@ import (
 	dto "delob/internal/processor/model"
 	"delob/internal/shared"
 	tokenizer "delob/internal/tokenizer"
-	"delob/internal/utils"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -84,7 +83,7 @@ func (p *Processor) handleOrders(orders interface{}) (string, error) {
 			return result, orderError
 		}
 	default:
-		fmt.Printf("unexpected type %T", v)
+		fmt.Printf("unexpected token type %T", v)
 	}
 
 	return result, nil
@@ -114,14 +113,17 @@ func (p *Processor) updatePlayers(winKeys []string, loseKeys []string, matchResu
 	if err != nil {
 		return "", err
 	}
+	teamOneKeys, teamTwoKeys := dto.MapPlayerToKeysCollection(teamOnePlayers), dto.MapPlayerToKeysCollection(teamTwoPlayers)
+
+	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(matchResult))
 
 	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, matchResult)
 
-	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(dto.MapPlayerToKeysCollection(teamOnePlayers), calc.TeamOneEloLambda())
+	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(teamOneKeys, calc.TeamOneEloLambda(), match)
 	if errTeamOneUpdate != nil {
 		return "", errTeamOneUpdate
 	}
-	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(dto.MapPlayerToKeysCollection(teamTwoPlayers), calc.TeamTwoEloLambda())
+	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(teamTwoKeys, calc.TeamTwoEloLambda(), match)
 	if errTeamTwoUpdate != nil {
 		return "", errTeamTwoUpdate
 	}
@@ -133,7 +135,7 @@ func (p *Processor) loadPlayersToUpdate(teamOneKeys []string, teamTwoKeys []stri
 	teamOnePlayers, teamTwoPlayers := []dto.Player{}, []dto.Player{}
 
 	for i := range teamOneKeys {
-		player, errWin := p.getPlayerById(teamOneKeys[i])
+		player, errWin := p.getPlayerByKey(teamOneKeys[i])
 		if errWin != nil {
 			return teamOnePlayers, teamTwoPlayers, errWin
 		}
@@ -141,7 +143,7 @@ func (p *Processor) loadPlayersToUpdate(teamOneKeys []string, teamTwoKeys []stri
 	}
 
 	for i := range teamTwoKeys {
-		player, errLose := p.getPlayerById(teamTwoKeys[i])
+		player, errLose := p.getPlayerByKey(teamTwoKeys[i])
 		if errLose != nil {
 			return teamOnePlayers, teamTwoPlayers, errLose
 		}
@@ -150,35 +152,12 @@ func (p *Processor) loadPlayersToUpdate(teamOneKeys []string, teamTwoKeys []stri
 	return teamOnePlayers, teamTwoPlayers, nil
 }
 
-func (p *Processor) getPlayerById(entityId string) (dto.Player, error) {
+func (p *Processor) getPlayerByKey(entityId string) (dto.Player, error) {
 	pages, err := p.bufferManager.GetPages(entityId)
 	if err != nil {
 		return dto.Player{}, err
 	}
 	return dto.NewPlayer(entityId, pages), nil
-}
-
-func (p *Processor) extractPlayerIds(args []string) (string, string, error) {
-	var playerWin string
-	var playerLose string
-
-	errorChecker := 0
-	for i := 0; i < len(args); i++ {
-		if args[i] == "WIN" {
-			playerWin = args[i+1]
-			errorChecker++
-		}
-		if args[i] == "LOSE" {
-			playerLose = args[i+1]
-			errorChecker++
-		}
-	}
-
-	if errorChecker != 2 {
-		return playerWin, playerLose, fmt.Errorf("at least on of entities does not exists")
-	}
-
-	return playerWin, playerLose, nil
 }
 
 func (p *Processor) addPlayer(order []string) (string, error) {
@@ -187,7 +166,7 @@ func (p *Processor) addPlayer(order []string) (string, error) {
 	var invalidEntityIds []string
 
 	for i := range order {
-		err := p.bufferManager.AddPlayer(order[i], utils.INITIAL_ELO)
+		err := p.bufferManager.AddPlayer(order[i], elo.INITIAL_ELO, nil)
 		if err != nil {
 			isFullySuccessful = false
 			invalidEntityIds = append(invalidEntityIds, order[i])

@@ -6,7 +6,8 @@ import (
 	"math"
 )
 
-const k float64 = 25
+const k float64 = 32
+const INITIAL_ELO int16 = 1300
 
 type Calculator struct {
 	teamOneEloLambda int16
