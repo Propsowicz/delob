@@ -67,17 +67,17 @@ func (p *Processor) handleOrders(orders interface{}) (string, error) {
 	var orderError error
 
 	switch v := orders.(type) {
-	case tokenizer.AddPlayersToken:
+	case tokenizer.AddPlayersOrder:
 		result, orderError = p.addPlayer(v.Keys)
 		if orderError != nil {
 			return result, orderError
 		}
-	case tokenizer.AddMatchToken:
+	case tokenizer.AddMatchOrder:
 		result, orderError = p.updatePlayers(v.TeamOneKeys, v.TeamTwoKeys, v.MatchResult)
 		if orderError != nil {
 			return result, orderError
 		}
-	case tokenizer.SelectAllToken:
+	case tokenizer.SelectOrder:
 		result, orderError = p.selectAll()
 		if orderError != nil {
 			return result, orderError

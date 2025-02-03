@@ -28,7 +28,7 @@ func tokenizeAddPlayersExpression(expression string) (interface{}, error) {
 		}
 	}
 
-	return AddPlayersToken{
+	return AddPlayersOrder{
 		Keys: result,
 	}, nil
 }

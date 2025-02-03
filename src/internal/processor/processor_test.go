@@ -108,7 +108,7 @@ func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYER 'Tomek';")
-	result, err := p.Execute("SELECT ALL;")
+	result, err := p.Execute("SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -122,7 +122,7 @@ func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
 
 	p.Execute("ADD PLAYER 'Tomek';")
 	p.Execute("ADD PLAYER 'Romek';")
-	result, err := p.Execute("SELECT ALL;")
+	result, err := p.Execute("SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -140,7 +140,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 	p.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
 	p.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
 
-	result, err := p.Execute("SELECT ALL;")
+	result, err := p.Execute("SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -160,7 +160,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 	p.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
 	p.Execute("SET DRAW BETWEEN 'Romek' AND 'Tomek';")
 
-	result, err := p.Execute("SELECT ALL;")
+	result, err := p.Execute("SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")

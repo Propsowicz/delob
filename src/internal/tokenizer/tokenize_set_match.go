@@ -17,7 +17,7 @@ func tokenizeDecisiveMatchResultExpression(expression string) (interface{}, erro
 		return nil, errExtract
 	}
 
-	return AddMatchToken{
+	return AddMatchOrder{
 		TeamOneKeys: teamOneKeys,
 		TeamTwoKeys: teamTwoKeys,
 		MatchResult: matchResult,
@@ -40,7 +40,7 @@ func tokenizeDrawMatchResultExpression(expression string) (interface{}, error) {
 		return nil, errTeamTwoKeys
 	}
 
-	return AddMatchToken{
+	return AddMatchOrder{
 		TeamOneKeys: teamOneKeys,
 		TeamTwoKeys: teamTwoKeys,
 		MatchResult: shared.Draw,

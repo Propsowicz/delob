@@ -1,0 +1,32 @@
+
+[Test_IfCanAddOnePlayer - 1]
+1 row(s) affected
+---
+
+[Test_IfCanAddTwoPlayers - 1]
+2 row(s) affected
+---
+
+[Test_IfCannotAddTheSamePlayerTwicePlayer - 1]
+1 row(s) affected
+---
+
+[Test_IfCannotAddTheSamePlayerTwicePlayer - 2]
+1 row(s) affected
+---
+
+[Test_IfCanSelectAllWhenThereIsOnePlayer - 1]
+[{"Key":"Tomek","Elo":1300}]
+---
+
+[Test_IfCanSelectTwoPlayersWithoutUpdatingResults - 1]
+[{"Key":"Tomek","Elo":1300},{"Key":"Romek","Elo":1300}]
+---
+
+[Test_IfCanSelectTwoPlayersWithUpdatingResults - 1]
+[{"Key":"Tomek","Elo":1312},{"Key":"Romek","Elo":1288}]
+---
+
+[Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult - 1]
+[{"Key":"Tomek","Elo":1295},{"Key":"Romek","Elo":1305}]
+---

@@ -9,23 +9,21 @@ import (
 type Token interface {
 }
 
-type AddPlayersToken struct {
+type AddPlayersOrder struct {
 	Keys []string
 }
 
-type AddMatchToken struct {
+type AddMatchOrder struct {
 	TeamOneKeys []string
 	TeamTwoKeys []string
 	MatchResult shared.MatchResult
 }
 
-type SelectAllToken struct{}
-
 const ADD_PLAYER_EXPRESSION string = "ADD PLAYER"
 const SET_WIN_EXPRESSION string = "SET WIN FOR "
 const SET_LOSE_EXPRESSION string = "SET LOSE FOR "
 const DRAW_EXPRESSION string = "SET DRAW BETWEEN "
-const SELECT_ALL_EXPRESSION string = "SELECT ALL"
+const SELECT_EXPRESSION string = "SELECT "
 
 func Tokenize(expression string) (interface{}, error) {
 	sanitazedExpression, err := sanitazeExpression(expression)
@@ -46,8 +44,8 @@ func Tokenize(expression string) (interface{}, error) {
 		return tokenizeDrawMatchResultExpression(sanitazedExpression)
 	}
 
-	if strings.ToUpper(sanitazedExpression) == SELECT_ALL_EXPRESSION {
-		return selectAllTokenizer(sanitazedExpression)
+	if strings.HasPrefix(strings.ToUpper(sanitazedExpression), SELECT_EXPRESSION) {
+		return tokenize_select(sanitazedExpression)
 	}
 
 	return nil,
