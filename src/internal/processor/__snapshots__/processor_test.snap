@@ -20,13 +20,13 @@
 ---
 
 [Test_IfCanSelectTwoPlayersWithoutUpdatingResults - 1]
-[{"Key":"Tomek","Elo":1300},{"Key":"Romek","Elo":1300}]
+[{"Key":"Romek","Elo":1300},{"Key":"Tomek","Elo":1300}]
 ---
 
 [Test_IfCanSelectTwoPlayersWithUpdatingResults - 1]
-[{"Key":"Tomek","Elo":1312},{"Key":"Romek","Elo":1288}]
+[{"Key":"Romek","Elo":1288},{"Key":"Tomek","Elo":1312}]
 ---
 
 [Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult - 1]
-[{"Key":"Tomek","Elo":1295},{"Key":"Romek","Elo":1305}]
+[{"Key":"Romek","Elo":1305},{"Key":"Tomek","Elo":1295}]
 ---

@@ -2,10 +2,18 @@ package processor
 
 import (
 	buffer "delob/internal/buffer"
+	"delob/internal/processor/model"
+	"encoding/json"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 )
+
+func assertCorrectKeyOrder(t *testing.T, record model.Player, expectedKey string) {
+	if record.Key != expectedKey {
+		t.Errorf("wrong order: expected %s, got %s", expectedKey, record.Key)
+	}
+}
 
 func Test_IfCanNotTokenizeExpressionWithoutSemicolonEnds(t *testing.T) {
 	bufferManager := buffer.NewBufferManager()
@@ -166,4 +174,59 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 		t.Errorf("Should not throw error.")
 	}
 	snaps.MatchSnapshot(t, result)
+}
+
+func Test_IfCanSortAscendingByPlayerKey(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("ADD PLAYERS ('A', 'C', 'E');")
+	p.Execute("ADD PLAYERS ('B', 'D');")
+
+	result, _ := p.Execute("SELECT Players ORDER BY Key ASC;")
+
+	data := []model.Player{}
+	json.Unmarshal([]byte(result), &data)
+	assertCorrectKeyOrder(t, data[0], "A")
+	assertCorrectKeyOrder(t, data[1], "B")
+	assertCorrectKeyOrder(t, data[2], "C")
+	assertCorrectKeyOrder(t, data[3], "D")
+	assertCorrectKeyOrder(t, data[4], "E")
+}
+
+func Test_IfCanSortDescendingByPlayerKey(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("ADD PLAYERS ('A', 'C', 'E');")
+	p.Execute("ADD PLAYERS ('B', 'D');")
+
+	result, _ := p.Execute("SELECT Players ORDER BY Key DESC;")
+
+	data := []model.Player{}
+	json.Unmarshal([]byte(result), &data)
+	assertCorrectKeyOrder(t, data[4], "A")
+	assertCorrectKeyOrder(t, data[3], "B")
+	assertCorrectKeyOrder(t, data[2], "C")
+	assertCorrectKeyOrder(t, data[1], "D")
+	assertCorrectKeyOrder(t, data[0], "E")
+}
+
+func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
+	bufferManager := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("ADD PLAYERS ('A', 'B', 'X');")
+
+	p.Execute("SET WIN FOR 'B' AND LOSE FOR 'X';")
+	p.Execute("SET WIN FOR 'B' AND LOSE FOR 'X';")
+	p.Execute("SET WIN FOR 'A' AND LOSE FOR 'X';")
+
+	result, _ := p.Execute("SELECT Players ORDER BY Elo DESC;")
+
+	data := []model.Player{}
+	json.Unmarshal([]byte(result), &data)
+	assertCorrectKeyOrder(t, data[0], "B")
+	assertCorrectKeyOrder(t, data[1], "A")
+	assertCorrectKeyOrder(t, data[2], "X")
 }

@@ -205,3 +205,41 @@ func Test_IfCanAddMatchEventForMultiplePlayersWithDrawBetweenThem(t *testing.T) 
 		t.Errorf("Expected: %s, got: %s.", "John", token.TeamTwoKeys[1])
 	}
 }
+
+func Test_IfCanGetSelecetExpressionComponents(t *testing.T) {
+	expressionMock := "SELECT Players JOIN Matches WHERE Key = 'zxc' AND Elo > 2500 ORDER BY Elo ASC"
+
+	selectToken, joinToken, whereToken, orderToken := getSelectExpressionTokens(expressionMock)
+
+	if selectToken != "Players" {
+		t.Errorf("wrong token: expected %s, got %s", "Players", selectToken)
+	}
+	if joinToken != "Matches" {
+		t.Errorf("wrong token: expected %s, got %s", "Matches", joinToken)
+	}
+	if whereToken != "Key = 'zxc' AND Elo > 2500" {
+		t.Errorf("wrong token: expected %s, got %s", "Key = 'zxc' AND Elo > 2500", whereToken)
+	}
+	if orderToken != "Elo ASC" {
+		t.Errorf("wrong token: expected %s, got %s", "Elo ASC", orderToken)
+	}
+}
+
+func Test_IfCanGetSelecetExpressionComponentsWithOnlyTwoComponents(t *testing.T) {
+	expressionMock := "SELECT Players ORDER BY Elo ASC"
+
+	selectToken, joinToken, whereToken, orderToken := getSelectExpressionTokens(expressionMock)
+
+	if selectToken != "Players" {
+		t.Errorf("wrong token: expected %s, got %s", "Players", selectToken)
+	}
+	if joinToken != "" {
+		t.Errorf("wrong token: expected %s, got %s", "", joinToken)
+	}
+	if whereToken != "" {
+		t.Errorf("wrong token: expected %s, got %s", "", whereToken)
+	}
+	if orderToken != "Elo ASC" {
+		t.Errorf("wrong token: expected %s, got %s", "Elo ASC", orderToken)
+	}
+}

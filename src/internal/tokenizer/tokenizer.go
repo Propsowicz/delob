@@ -45,7 +45,7 @@ func Tokenize(expression string) (interface{}, error) {
 	}
 
 	if strings.HasPrefix(strings.ToUpper(sanitazedExpression), SELECT_EXPRESSION) {
-		return tokenize_select(sanitazedExpression)
+		return tokenizeSelect(sanitazedExpression)
 	}
 
 	return nil,

@@ -4,10 +4,10 @@ import (
 	buffer "delob/internal/buffer"
 	elo "delob/internal/processor/elo"
 	dto "delob/internal/processor/model"
-	"delob/internal/shared"
 	tokenizer "delob/internal/tokenizer"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -73,12 +73,12 @@ func (p *Processor) handleOrders(orders interface{}) (string, error) {
 			return result, orderError
 		}
 	case tokenizer.AddMatchOrder:
-		result, orderError = p.updatePlayers(v.TeamOneKeys, v.TeamTwoKeys, v.MatchResult)
+		result, orderError = p.updatePlayers(v)
 		if orderError != nil {
 			return result, orderError
 		}
 	case tokenizer.SelectOrder:
-		result, orderError = p.selectAll()
+		result, orderError = p.selectPlayers(v)
 		if orderError != nil {
 			return result, orderError
 		}
@@ -89,7 +89,7 @@ func (p *Processor) handleOrders(orders interface{}) (string, error) {
 	return result, nil
 }
 
-func (p *Processor) selectAll() (string, error) {
+func (p *Processor) selectPlayers(selectOrder tokenizer.SelectOrder) (string, error) {
 	allEntities, pagesCollections, err := p.bufferManager.GetAllPages()
 	if err != nil {
 		return "", err
@@ -97,9 +97,19 @@ func (p *Processor) selectAll() (string, error) {
 	playersCollection := []dto.Player{}
 
 	for i := 0; i < len(allEntities); i++ {
-		playersCollection = append(playersCollection,
-			dto.NewPlayer(allEntities[i], pagesCollections[i]))
+		playersCollection = append(playersCollection, dto.NewPlayer(allEntities[i], pagesCollections[i]))
 	}
+
+	sort.Slice(playersCollection, func(i, j int) bool {
+		switch selectOrder.OrderBy {
+		case tokenizer.Key:
+			return sortComparer(selectOrder.OrderDir == tokenizer.OrderDir(tokenizer.Asc), playersCollection[i].Key, playersCollection[j].Key)
+		case tokenizer.Elo:
+			return sortComparer(selectOrder.OrderDir == tokenizer.OrderDir(tokenizer.Asc), playersCollection[i].Elo, playersCollection[j].Elo)
+		}
+		return sortComparer(true, playersCollection[i].Key, playersCollection[j].Key)
+	})
+
 	jsonResult, errMarshal := json.Marshal(playersCollection)
 	if errMarshal != nil {
 		return "", errMarshal
@@ -108,16 +118,23 @@ func (p *Processor) selectAll() (string, error) {
 	return string(jsonResult), nil
 }
 
-func (p *Processor) updatePlayers(winKeys []string, loseKeys []string, matchResult shared.MatchResult) (string, error) {
-	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(winKeys, loseKeys)
+func sortComparer[T int16 | string](isAsc bool, leftOperand, rightOperand T) bool {
+	if isAsc {
+		return leftOperand < rightOperand
+	}
+	return leftOperand > rightOperand
+}
+
+func (p *Processor) updatePlayers(addMatchOrder tokenizer.AddMatchOrder) (string, error) {
+	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(addMatchOrder.TeamOneKeys, addMatchOrder.TeamTwoKeys)
 	if err != nil {
 		return "", err
 	}
 	teamOneKeys, teamTwoKeys := dto.MapPlayerToKeysCollection(teamOnePlayers), dto.MapPlayerToKeysCollection(teamTwoPlayers)
 
-	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(matchResult))
+	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(addMatchOrder.MatchResult))
 
-	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, matchResult)
+	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, addMatchOrder.MatchResult)
 
 	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(teamOneKeys, calc.TeamOneEloLambda(), match)
 	if errTeamOneUpdate != nil {

@@ -24,8 +24,8 @@ type Record struct {
 	IsUsed       bool
 	AddTimestamp int64
 	Value        int16
-	// MatchRefKey  string
-	MatchRef *Match
+	MatchRefKey  string
+	MatchRef     *Match
 }
 
 func (page *Page) isPageFull() bool {
@@ -52,11 +52,16 @@ func newPage(entityId string, value int16, matchRef *Match) Page {
 }
 
 func newRecord(value int16, matchRef *Match) Record {
+	matchRefKey := "init"
+	if matchRef != nil {
+		matchRefKey = matchRef.Key
+	}
+
 	return Record{
 		IsUsed:       true,
 		AddTimestamp: utils.Timestamp(),
 		Value:        value,
 		MatchRef:     matchRef,
-		// MatchRefKey:  matchRef.Key,
+		MatchRefKey:  matchRefKey,
 	}
 }
