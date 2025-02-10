@@ -6,6 +6,7 @@ import (
 )
 
 type BufferManager struct {
+	backupManager  *BackupManager
 	syncMutex      sync.Mutex
 	pageDictionary PageDictionary
 	pages          []Page
@@ -13,7 +14,19 @@ type BufferManager struct {
 }
 
 func NewBufferManager() BufferManager {
-	return BufferManager{}
+	backupManager, _ := NewBackupManager()
+	return BufferManager{
+		backupManager: &backupManager,
+	}
+}
+
+func (buffer *BufferManager) SyncData(elo string) error {
+	err := buffer.backupManager.Append(elo)
+	return err
+}
+
+func (buffer *BufferManager) LoadData() ([]string, error) {
+	return buffer.backupManager.Read()
 }
 
 func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *Match) error {

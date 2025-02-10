@@ -16,9 +16,12 @@ type Processor struct {
 }
 
 func NewProcessor(b *buffer.BufferManager) Processor {
-	return Processor{
+	p := Processor{
 		bufferManager: b,
 	}
+	p.bufferManager.LoadData()
+
+	return p
 }
 
 type transactionSteps struct {
@@ -58,8 +61,7 @@ func (p *Processor) Execute(
 		isTransactionSuccessful = true
 	}
 
-	return result, p.finishTransaction(isTransactionSuccessful, transactionStepsTable, ordersError)
-
+	return result, p.finishTransaction(expression, isTransactionSuccessful, transactionStepsTable, ordersError)
 }
 
 func (p *Processor) handleOrders(orders interface{}) (string, error) {
@@ -204,7 +206,10 @@ func (p *Processor) startTansaction() (bool, *transactionSteps) {
 	return false, &transactionSteps{}
 }
 
-func (p *Processor) finishTransaction(isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps, err error) error {
+func (p *Processor) finishTransaction(expression string, isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps, err error) error {
+
+	p.bufferManager.SyncData(expression)
+
 	if !isTransactionSuccessful {
 		revertChanges(1)
 

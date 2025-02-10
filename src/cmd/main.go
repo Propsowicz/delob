@@ -25,12 +25,18 @@ func main() {
 	bufferManager := buffer.NewBufferManager()
 	processor := p.NewProcessor(&bufferManager)
 
-	result, err := processor.Execute("")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(result)
+	processor.Execute("ADD PLAYER 'Tomek';")
+	processor.Execute("ADD PLAYER 'Romek';")
+	processor.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	processor.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
+	processor.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
+
+	// result, err := processor.Execute("")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// fmt.Println(result)
 
 	// port, err := newPort(os.Args)
 	// if err != nil {

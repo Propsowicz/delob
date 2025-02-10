@@ -2,13 +2,24 @@ package buffer
 
 import (
 	"delob/internal/utils"
+	"os"
 	"testing"
 )
+
+func setupSuite(_ *testing.T) func(t *testing.T) {
+	return func(t *testing.T) {
+		backupManagerPAth := "backup"
+		os.RemoveAll(backupManagerPAth)
+	}
+}
 
 const upodateEloValue int16 = 25
 const initElo int16 = 1500
 
 func Test_IfCanAddPlayerToBuffer(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	entityIdMock := "123987"
 
@@ -42,6 +53,9 @@ func Test_IfCanAddPlayerToBuffer(t *testing.T) {
 }
 
 func Test_IfGetErrorWhenTryToAddExistingPlayerToBuffer(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	entityIdMock := "123987"
 
@@ -57,6 +71,9 @@ func Test_IfGetErrorWhenTryToAddExistingPlayerToBuffer(t *testing.T) {
 }
 
 func Test_IfGetErrorWhenTryToUpdateNotExistingPlayerToBuffer(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	entityIdMock := "123987"
 
@@ -68,6 +85,9 @@ func Test_IfGetErrorWhenTryToUpdateNotExistingPlayerToBuffer(t *testing.T) {
 }
 
 func Test_IfCanUpdatePlayerWhenCanAddToExistingPage(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	entityIdMock := "123987"
 	bufferManager.AddPlayer(entityIdMock, initElo, nil)
@@ -92,6 +112,9 @@ func Test_IfCanUpdatePlayerWhenCanAddToExistingPage(t *testing.T) {
 }
 
 func Test_IfCanUpdatePlayerWhenThereIsOnlyOneSlotInPage(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	entityIdMock := "123987"
 	bufferManager.AddPlayer(entityIdMock, initElo, nil)
@@ -120,6 +143,9 @@ func Test_IfCanUpdatePlayerWhenThereIsOnlyOneSlotInPage(t *testing.T) {
 }
 
 func Test_IfCanUpdatePlayerWhenPageIsFull(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	entityIdMock := "123987"
 	bufferManager.AddPlayer(entityIdMock, initElo, nil)
@@ -145,6 +171,9 @@ func Test_IfCanUpdatePlayerWhenPageIsFull(t *testing.T) {
 }
 
 func Test_IfCanAppendMatchToBuffer(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	bufferManager := NewBufferManager()
 	teamOneKeys := []string{"1", "2"}
 	teamTwoKeys := []string{"3", "4"}

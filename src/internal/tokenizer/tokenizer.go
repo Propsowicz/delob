@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// TODO it needs to be refactored: see pgsql and how it is done there
 type Token interface {
 }
 
