@@ -8,8 +8,8 @@ import (
 
 func setupSuite(_ *testing.T) func(t *testing.T) {
 	return func(t *testing.T) {
-		backupManagerPAth := "backup"
-		os.RemoveAll(backupManagerPAth)
+		backupManagerPath := "log_data"
+		os.RemoveAll(backupManagerPath)
 	}
 }
 
@@ -20,7 +20,7 @@ func Test_IfCanAddPlayerToBuffer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 
 	err := bufferManager.AddPlayer(entityIdMock, initElo, nil)
@@ -56,7 +56,7 @@ func Test_IfGetErrorWhenTryToAddExistingPlayerToBuffer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 
 	err1 := bufferManager.AddPlayer(entityIdMock, initElo, nil)
@@ -74,7 +74,7 @@ func Test_IfGetErrorWhenTryToUpdateNotExistingPlayerToBuffer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 
 	err := bufferManager.UpdatePlayer(entityIdMock, upodateEloValue, nil)
@@ -88,7 +88,7 @@ func Test_IfCanUpdatePlayerWhenCanAddToExistingPage(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 	bufferManager.AddPlayer(entityIdMock, initElo, nil)
 
@@ -115,7 +115,7 @@ func Test_IfCanUpdatePlayerWhenThereIsOnlyOneSlotInPage(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 	bufferManager.AddPlayer(entityIdMock, initElo, nil)
 
@@ -146,7 +146,7 @@ func Test_IfCanUpdatePlayerWhenPageIsFull(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 	bufferManager.AddPlayer(entityIdMock, initElo, nil)
 
@@ -174,7 +174,7 @@ func Test_IfCanAppendMatchToBuffer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := NewBufferManager()
+	bufferManager, _ := NewBufferManager()
 	teamOneKeys := []string{"1", "2"}
 	teamTwoKeys := []string{"3", "4"}
 	matchResult := 0

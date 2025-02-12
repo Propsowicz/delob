@@ -18,8 +18,8 @@ func assertCorrectKeyOrder(t *testing.T, record model.Player, expectedKey string
 
 func setupSuite(_ *testing.T) func(t *testing.T) {
 	return func(t *testing.T) {
-		backupManagerPAth := "backup"
-		os.RemoveAll(backupManagerPAth)
+		backupManagerPath := "log_data"
+		os.RemoveAll(backupManagerPath)
 	}
 }
 
@@ -27,7 +27,7 @@ func Test_IfCanNotTokenizeExpressionWithoutSemicolonEnds(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tomek'"
 
@@ -42,7 +42,7 @@ func Test_IfCanAddOnePlayer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tomek';"
 
@@ -61,7 +61,7 @@ func Test_IfCanAddTwoPlayers(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYERS ('Tomek', 'Romek');"
 
@@ -80,7 +80,7 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	firstExpressionMock := "ADD PLAYER 'Tomek';"
 	secondExpressionMock := "ADD PLAYERS ('Tomek', 'Romek' );"
@@ -109,7 +109,7 @@ func Test_IfCannotUpdateWhenIdDoesnNotExists_Case1(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tomek';"
 	p.Execute(expressionMock)
@@ -125,7 +125,7 @@ func Test_IfCannotUpdateWhenIdDoesnNotExists_Case2(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Romek';"
 	p.Execute(expressionMock)
@@ -141,7 +141,7 @@ func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYER 'Tomek';")
@@ -157,7 +157,7 @@ func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYER 'Tomek';")
@@ -174,7 +174,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYER 'Tomek';")
@@ -195,7 +195,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYER 'Tomek';")
@@ -218,7 +218,7 @@ func Test_IfCanSortAscendingByPlayerKey(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYERS ('A', 'C', 'E');")
@@ -239,7 +239,7 @@ func Test_IfCanSortDescendingByPlayerKey(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYERS ('A', 'C', 'E');")
@@ -260,7 +260,7 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
-	bufferManager := buffer.NewBufferManager()
+	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("ADD PLAYERS ('A', 'B', 'X');")

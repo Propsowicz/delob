@@ -21,22 +21,38 @@ import (
 
 func main() {
 
-	// need to nadle transaction -> optimistic locking?
-	bufferManager := buffer.NewBufferManager()
+	// PLAN
+	// 1. integration tests
+	// 2. refactor tokenizer -> token scan -> parser
+	// 3. add tcp
+	// 4. add SCRAM
+	// 5. add pipeline
+
+	// need to handle transaction -> optimistic locking?
+	bufferManager, err := buffer.NewBufferManager()
+	if err != nil {
+		return
+	}
+
 	processor := p.NewProcessor(&bufferManager)
+	errInit := processor.Initialize()
+	if errInit != nil {
+		fmt.Println(errInit)
+		return
+	}
 
 	processor.Execute("ADD PLAYER 'Tomek';")
-	processor.Execute("ADD PLAYER 'Romek';")
-	processor.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
-	processor.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Romek';")
-	processor.Execute("SET WIN FOR 'Romek' AND LOSE FOR 'Tomek';")
+	processor.Execute("ADD PLAYER 'Justyna';")
+	processor.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Justyna';")
+	processor.Execute("SET WIN FOR 'Tomek' AND LOSE FOR 'Justyna';")
+	processor.Execute("SET WIN FOR 'Justyna' AND LOSE FOR 'Tomek';")
 
-	// result, err := processor.Execute("")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	// fmt.Println(result)
+	result, err := processor.Execute("SELECT Players ORDER BY Elo DESC;")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
 
 	// port, err := newPort(os.Args)
 	// if err != nil {

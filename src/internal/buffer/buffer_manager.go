@@ -6,27 +6,39 @@ import (
 )
 
 type BufferManager struct {
-	backupManager  *BackupManager
+	logDataManager *LogDataManager
 	syncMutex      sync.Mutex
 	pageDictionary PageDictionary
 	pages          []Page
 	matches        []Match
 }
 
-func NewBufferManager() BufferManager {
-	backupManager, _ := NewBackupManager()
-	return BufferManager{
-		backupManager: &backupManager,
+func NewBufferManager() (BufferManager, error) {
+	logDataManager, err := NewLogDataManager()
+	if err != nil {
+		return BufferManager{}, err
 	}
+
+	return BufferManager{
+		logDataManager: &logDataManager,
+	}, nil
 }
 
-func (buffer *BufferManager) SyncData(elo string) error {
-	err := buffer.backupManager.Append(elo)
+func (buffer *BufferManager) AppendLogData(expression string) error {
+	err := buffer.logDataManager.Append(expression)
 	return err
 }
 
-func (buffer *BufferManager) LoadData() ([]string, error) {
-	return buffer.backupManager.Read()
+func (buffer *BufferManager) LoadLogData() ([]string, error) {
+	if !buffer.logDataManager.IsBackupFileExists {
+		return []string{}, nil
+	}
+
+	result, err := buffer.logDataManager.Read()
+	if err != nil {
+		return nil, nil
+	}
+	return result, nil
 }
 
 func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *Match) error {

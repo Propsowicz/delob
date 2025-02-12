@@ -17,6 +17,10 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# data
+log_data
+*.delob
+
 # Go workspace file
 go.work
 go.work.sum

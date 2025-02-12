@@ -19,7 +19,6 @@ func NewProcessor(b *buffer.BufferManager) Processor {
 	p := Processor{
 		bufferManager: b,
 	}
-	p.bufferManager.LoadData()
 
 	return p
 }
@@ -39,6 +38,27 @@ type addToPage struct {
 type addToLogs struct {
 }
 
+func (p *Processor) Initialize() error {
+	expressionLogs, err := p.bufferManager.LoadLogData()
+	if err != nil {
+		return err
+	}
+
+	for i := range expressionLogs {
+		tokenizedExpression, err := tokenizer.Tokenize(expressionLogs[i])
+
+		if err != nil {
+			return err
+		}
+
+		_, _, errOrder := p.handleOrders(tokenizedExpression)
+		if errOrder != nil {
+			return errOrder
+		}
+	}
+	return nil
+}
+
 func (p *Processor) Execute(
 	expression string) (string, error) {
 	tokenizedExpression, err := tokenizer.Tokenize(expression)
@@ -56,39 +76,42 @@ func (p *Processor) Execute(
 	// transactionId := time.Now().Nanosecond()
 	isTransactionSuccessful, transactionStepsTable := p.startTansaction()
 
-	result, ordersError := p.handleOrders(tokenizedExpression)
+	result, isReadOperation, ordersError := p.handleOrders(tokenizedExpression)
 	if ordersError == nil {
 		isTransactionSuccessful = true
 	}
 
-	return result, p.finishTransaction(expression, isTransactionSuccessful, transactionStepsTable, ordersError)
+	return result, p.finishTransaction(expression, isReadOperation, isTransactionSuccessful, transactionStepsTable, ordersError)
 }
 
-func (p *Processor) handleOrders(orders interface{}) (string, error) {
+func (p *Processor) handleOrders(orders interface{}) (string, bool, error) {
 	var result string = ""
 	var orderError error
+	var isReadOperation bool = false
 
 	switch v := orders.(type) {
 	case tokenizer.AddPlayersOrder:
 		result, orderError = p.addPlayer(v.Keys)
+		isReadOperation = true
 		if orderError != nil {
-			return result, orderError
+			return result, false, orderError
 		}
 	case tokenizer.AddMatchOrder:
 		result, orderError = p.updatePlayers(v)
+		isReadOperation = true
 		if orderError != nil {
-			return result, orderError
+			return result, false, orderError
 		}
 	case tokenizer.SelectOrder:
 		result, orderError = p.selectPlayers(v)
 		if orderError != nil {
-			return result, orderError
+			return result, false, orderError
 		}
 	default:
 		fmt.Printf("unexpected token type %T", v)
 	}
 
-	return result, nil
+	return result, isReadOperation, nil
 }
 
 func (p *Processor) selectPlayers(selectOrder tokenizer.SelectOrder) (string, error) {
@@ -206,9 +229,15 @@ func (p *Processor) startTansaction() (bool, *transactionSteps) {
 	return false, &transactionSteps{}
 }
 
-func (p *Processor) finishTransaction(expression string, isTransactionSuccessful bool, tratransactionStepsTable *transactionSteps, err error) error {
+func (p *Processor) finishTransaction(expression string,
+	isReadOperation bool,
+	isTransactionSuccessful bool,
+	transactionStepsTable *transactionSteps,
+	err error) error {
 
-	p.bufferManager.SyncData(expression)
+	if isReadOperation {
+		p.bufferManager.AppendLogData(expression)
+	}
 
 	if !isTransactionSuccessful {
 		revertChanges(1)

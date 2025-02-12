@@ -1,6 +1,7 @@
 package buffer
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -11,22 +12,28 @@ import (
 // 	Load()
 // }
 
-type BackupManager struct {
+// TODO rename it
+type LogDataManager struct {
+	IsBackupFileExists  bool
 	dataCatalogFileName string
 	dataDirectory       string
 	path                string
 }
 
-func NewBackupManager() (BackupManager, error) {
-	b := BackupManager{
-		dataCatalogFileName: "data",
-		dataDirectory:       "backup",
+func NewLogDataManager() (LogDataManager, error) {
+	b := LogDataManager{
+		dataCatalogFileName: "dict",
+		dataDirectory:       "log_data",
 	}
-	b.path = fmt.Sprintf("%s/%s.db", b.dataDirectory, b.dataCatalogFileName)
+	b.path = fmt.Sprintf("%s/%s.delob", b.dataDirectory, b.dataCatalogFileName)
 
 	err := os.MkdirAll(b.dataDirectory, 0755)
 	if err != nil {
 		return b, err
+	}
+
+	if _, err := os.Stat(b.path); !errors.Is(err, os.ErrNotExist) {
+		b.IsBackupFileExists = true
 	}
 
 	return b, nil
@@ -37,17 +44,21 @@ type SimpleDataFormat struct {
 	Matches []Match
 }
 
-func (b *BackupManager) Read() ([]string, error) {
+func (b *LogDataManager) Read() ([]string, error) {
 	f, err := os.ReadFile(b.path)
 	if err != nil {
 		return nil, err
 	}
-
 	expressions := strings.Split(string(f), ";")
-	return expressions, nil
+	result := []string{}
+
+	for i := 0; i < len(expressions)-1; i++ {
+		result = append(result, expressions[i]+";")
+	}
+	return result, nil
 }
 
-func (b *BackupManager) Append(elo string) error {
+func (b *LogDataManager) Append(elo string) error {
 	f, err := os.OpenFile(b.path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
