@@ -7,6 +7,8 @@ import (
 )
 
 func setupSuite(_ *testing.T) func(t *testing.T) {
+	backupManagerPath := "log_data"
+	os.RemoveAll(backupManagerPath)
 	return func(t *testing.T) {
 		backupManagerPath := "log_data"
 		os.RemoveAll(backupManagerPath)

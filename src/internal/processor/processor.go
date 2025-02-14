@@ -5,6 +5,7 @@ import (
 	elo "delob/internal/processor/elo"
 	dto "delob/internal/processor/model"
 	tokenizer "delob/internal/tokenizer"
+	"delob/internal/utils"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -39,13 +40,14 @@ type addToLogs struct {
 }
 
 func (p *Processor) Initialize() error {
-	expressionLogs, err := p.bufferManager.LoadLogData()
+	dataLogs, err := p.bufferManager.LoadFromLogsDictionary()
 	if err != nil {
 		return err
 	}
 
-	for i := range expressionLogs {
-		tokenizedExpression, err := tokenizer.Tokenize(expressionLogs[i])
+	for i := range dataLogs {
+		tokenizedExpression, err := tokenizer.ParseFromJson(dataLogs[i].ParsedExpressionType,
+			dataLogs[i].ParsedExpression)
 
 		if err != nil {
 			return err
@@ -61,7 +63,9 @@ func (p *Processor) Initialize() error {
 
 func (p *Processor) Execute(
 	expression string) (string, error) {
-	tokenizedExpression, err := tokenizer.Tokenize(expression)
+	correlationId := utils.GenerateKey()
+
+	parsedExpression, err := tokenizer.Tokenize(expression)
 
 	if err != nil {
 		return "", err
@@ -76,45 +80,51 @@ func (p *Processor) Execute(
 	// transactionId := time.Now().Nanosecond()
 	isTransactionSuccessful, transactionStepsTable := p.startTansaction()
 
-	result, isReadOperation, ordersError := p.handleOrders(tokenizedExpression)
+	result, isWriteOperation, ordersError := p.handleOrders(parsedExpression)
 	if ordersError == nil {
 		isTransactionSuccessful = true
 	}
 
-	return result, p.finishTransaction(expression, isReadOperation, isTransactionSuccessful, transactionStepsTable, ordersError)
+	return result, p.finishTransaction(
+		correlationId,
+		parsedExpression,
+		isWriteOperation,
+		isTransactionSuccessful,
+		transactionStepsTable,
+		ordersError)
 }
 
-func (p *Processor) handleOrders(orders interface{}) (string, bool, error) {
-	var result string = ""
+func (p *Processor) handleOrders(orders tokenizer.ParsedExpression) (string, bool, error) {
+	var result string
 	var orderError error
-	var isReadOperation bool = false
+	var isWriteOperation bool = false
 
-	switch v := orders.(type) {
-	case tokenizer.AddPlayersOrder:
-		result, orderError = p.addPlayer(v.Keys)
-		isReadOperation = true
+	switch orders.GetType() {
+	case tokenizer.AddPlayersCommandType:
+		result, orderError = p.addPlayer(orders.(tokenizer.AddPlayersCommand).Keys)
+		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
-	case tokenizer.AddMatchOrder:
-		result, orderError = p.updatePlayers(v)
-		isReadOperation = true
+	case tokenizer.AddMatchCommandType:
+		result, orderError = p.updatePlayers(orders.(tokenizer.AddMatchCommand))
+		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
-	case tokenizer.SelectOrder:
-		result, orderError = p.selectPlayers(v)
+	case tokenizer.SelectQueryType:
+		result, orderError = p.selectPlayers(orders.(tokenizer.SelectQuery))
 		if orderError != nil {
 			return result, false, orderError
 		}
 	default:
-		fmt.Printf("unexpected token type %T", v)
+		fmt.Printf("unexpected parsed order type")
 	}
 
-	return result, isReadOperation, nil
+	return result, isWriteOperation, nil
 }
 
-func (p *Processor) selectPlayers(selectOrder tokenizer.SelectOrder) (string, error) {
+func (p *Processor) selectPlayers(selectOrder tokenizer.SelectQuery) (string, error) {
 	allEntities, pagesCollections, err := p.bufferManager.GetAllPages()
 	if err != nil {
 		return "", err
@@ -150,7 +160,7 @@ func sortComparer[T int16 | string](isAsc bool, leftOperand, rightOperand T) boo
 	return leftOperand > rightOperand
 }
 
-func (p *Processor) updatePlayers(addMatchOrder tokenizer.AddMatchOrder) (string, error) {
+func (p *Processor) updatePlayers(addMatchOrder tokenizer.AddMatchCommand) (string, error) {
 	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(addMatchOrder.TeamOneKeys, addMatchOrder.TeamTwoKeys)
 	if err != nil {
 		return "", err
@@ -229,20 +239,30 @@ func (p *Processor) startTansaction() (bool, *transactionSteps) {
 	return false, &transactionSteps{}
 }
 
-func (p *Processor) finishTransaction(expression string,
-	isReadOperation bool,
+func (p *Processor) finishTransaction(
+	correlationId string,
+	parsedExpression tokenizer.ParsedExpression,
+	isWriteOperation bool,
 	isTransactionSuccessful bool,
 	transactionStepsTable *transactionSteps,
-	err error) error {
+	errorFromOrder error) error {
 
-	if isReadOperation {
-		p.bufferManager.AppendLogData(expression)
+	json, err := parsedExpression.ToJson()
+	if err != nil {
+		return err
+	}
+
+	if isWriteOperation {
+		errWriteToLogsDict := p.bufferManager.AppendToLogsDictionary(correlationId, parsedExpression.GetType(), json)
+		if errWriteToLogsDict != nil {
+			return errWriteToLogsDict
+		}
 	}
 
 	if !isTransactionSuccessful {
 		revertChanges(1)
 
-		return err
+		return errorFromOrder
 	}
 
 	return nil

@@ -27,6 +27,7 @@ func main() {
 	// 3. add tcp
 	// 4. add SCRAM
 	// 5. add pipeline
+	// 6. dockerize
 
 	// need to handle transaction -> optimistic locking?
 	bufferManager, err := buffer.NewBufferManager()

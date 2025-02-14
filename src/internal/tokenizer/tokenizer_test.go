@@ -22,7 +22,7 @@ func Test_IfCanAddPlayer(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(AddPlayersOrder)
+	token := result.(AddPlayersCommand)
 
 	if len(token.Keys) != 1 {
 		t.Errorf("Expected: %d, got: %d.", 1, len(token.Keys))
@@ -49,7 +49,7 @@ func Test_IfCanAddTwoPlayers(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(AddPlayersOrder)
+	token := result.(AddPlayersCommand)
 
 	if len(token.Keys) != 2 {
 		t.Errorf("Expected: %d, got: %d.", 2, len(token.Keys))
@@ -88,7 +88,7 @@ func Test_IfCanAddMatchEventForTwoPlayers(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(AddMatchOrder)
+	token := result.(AddMatchCommand)
 
 	if token.MatchResult != shared.TeamOneWins {
 		t.Errorf("Expected: %d, got: %d.", shared.TeamOneWins, token.MatchResult)
@@ -115,7 +115,7 @@ func Test_IfCanAddMatchEventForMultiplePlayers(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(AddMatchOrder)
+	token := result.(AddMatchCommand)
 
 	if token.MatchResult != shared.TeamOneWins {
 		t.Errorf("Expected: %d, got: %d.", shared.TeamOneWins, token.MatchResult)
@@ -148,7 +148,7 @@ func Test_IfCanAddMatchEventForMultiplePlayersWithReverterOrder(t *testing.T) {
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(AddMatchOrder)
+	token := result.(AddMatchCommand)
 
 	if token.MatchResult != shared.TeamTwoWins {
 		t.Errorf("Expected: %d, got: %d.", shared.TeamTwoWins, token.MatchResult)
@@ -181,7 +181,7 @@ func Test_IfCanAddMatchEventForMultiplePlayersWithDrawBetweenThem(t *testing.T) 
 		t.Errorf("Expression should not return error.")
 	}
 
-	token := result.(AddMatchOrder)
+	token := result.(AddMatchCommand)
 
 	if token.MatchResult != shared.Draw {
 		t.Errorf("Expected: %d, got: %d.", shared.Draw, token.MatchResult)

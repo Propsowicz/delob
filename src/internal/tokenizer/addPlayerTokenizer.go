@@ -8,7 +8,7 @@ import (
 const addSinglePlayerExpression string = "ADD PLAYER "
 const addMultiplePlayersExpression string = "ADD PLAYERS "
 
-func tokenizeAddPlayersExpression(expression string) (interface{}, error) {
+func tokenizeAddPlayersExpression(expression string) (ParsedExpression, error) {
 	var result []string
 	var err error
 
@@ -28,7 +28,7 @@ func tokenizeAddPlayersExpression(expression string) (interface{}, error) {
 		}
 	}
 
-	return AddPlayersOrder{
+	return AddPlayersCommand{
 		Keys: result,
 	}, nil
 }

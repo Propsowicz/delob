@@ -6,7 +6,7 @@ import (
 )
 
 type BufferManager struct {
-	logDataManager *LogDataManager
+	logDataManager *DataLogsDictionaryManager
 	syncMutex      sync.Mutex
 	pageDictionary PageDictionary
 	pages          []Page
@@ -14,7 +14,7 @@ type BufferManager struct {
 }
 
 func NewBufferManager() (BufferManager, error) {
-	logDataManager, err := NewLogDataManager()
+	logDataManager, err := NewDataLogsDictionaryManager()
 	if err != nil {
 		return BufferManager{}, err
 	}
@@ -24,14 +24,14 @@ func NewBufferManager() (BufferManager, error) {
 	}, nil
 }
 
-func (buffer *BufferManager) AppendLogData(expression string) error {
-	err := buffer.logDataManager.Append(expression)
-	return err
+func (buffer *BufferManager) AppendToLogsDictionary(correlationId, parsedExpressionType,
+	parsedExpression string) error {
+	return buffer.logDataManager.Append(NewDataLog(correlationId, parsedExpressionType, parsedExpression))
 }
 
-func (buffer *BufferManager) LoadLogData() ([]string, error) {
-	if !buffer.logDataManager.IsBackupFileExists {
-		return []string{}, nil
+func (buffer *BufferManager) LoadFromLogsDictionary() ([]DataLog, error) {
+	if !buffer.logDataManager.IsLogsDictionaryFileExists {
+		return []DataLog{}, nil
 	}
 
 	result, err := buffer.logDataManager.Read()
@@ -42,7 +42,6 @@ func (buffer *BufferManager) LoadLogData() ([]string, error) {
 }
 
 func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *Match) error {
-
 	// move it to processor?
 	if _, err := buffer.getPageAdresses(entityId); err == nil {
 		return fmt.Errorf("player already exists: %s", entityId)

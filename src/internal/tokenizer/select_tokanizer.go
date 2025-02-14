@@ -1,6 +1,7 @@
 package tokenizer
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -14,11 +15,23 @@ import (
 // SELECT Players.history ??????
 // SELECT Players JOIN Matches WHERE Key = 'zxc' AND Elo > 2500 ORDER BY Elo ASC
 
-type SelectOrder struct {
+type SelectQuery struct {
 	WhereClause WhereClause
 	JoinMatches bool
 	OrderBy     Field
 	OrderDir    OrderDir
+}
+
+func (a SelectQuery) GetType() string {
+	return SelectQueryType
+}
+
+func (a SelectQuery) ToJson() (string, error) {
+	result, err := json.Marshal(a)
+	if err != nil {
+		return "", err
+	}
+	return string(result), nil
 }
 
 type WhereClause struct {
@@ -70,25 +83,25 @@ const JOIN_EXPRESSION_COMPONENT = "JOIN"
 const WHERE_EXPRESSION_COMPONENT = "WHERE"
 const ORDER_BY_EXPRESSION_COMPONENT = "ORDER BY"
 
-func newSelectOrder() SelectOrder {
-	return SelectOrder{}
+func newSelectOrder() SelectQuery {
+	return SelectQuery{}
 }
 
-func (s *SelectOrder) validateSelectToken(token string) error {
+func (s *SelectQuery) validateSelectToken(token string) error {
 	if token != "Players" {
 		return fmt.Errorf("error in select clause - select is handling only Players collection")
 	}
 	return nil
 }
 
-func (s *SelectOrder) validateJoinToken(token string) {
+func (s *SelectQuery) validateJoinToken(token string) {
 	// TODO not yet implemented - should be connected with streaming player's elo history?
 	if token == "Matches" {
 		s.JoinMatches = true
 	}
 }
 
-func (s *SelectOrder) validateOrderToken(token string) error {
+func (s *SelectQuery) validateOrderToken(token string) error {
 	if token == "" {
 		return nil
 	}
@@ -120,7 +133,7 @@ func (s *SelectOrder) validateOrderToken(token string) error {
 	return nil
 }
 
-func tokenizeSelect(expression string) (interface{}, error) {
+func tokenizeSelect(expression string) (ParsedExpression, error) {
 	selectOrder := newSelectOrder()
 	selectToken, joinToken, _, orderToken := getSelectExpressionTokens(expression)
 

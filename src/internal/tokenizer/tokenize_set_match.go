@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func tokenizeDecisiveMatchResultExpression(expression string) (interface{}, error) {
+func tokenizeDecisiveMatchResultExpression(expression string) (ParsedExpression, error) {
 	splitedUpdateExpression, err := splitUpdateExpression(expression)
 	if err != nil {
 		return nil, err
@@ -17,14 +17,14 @@ func tokenizeDecisiveMatchResultExpression(expression string) (interface{}, erro
 		return nil, errExtract
 	}
 
-	return AddMatchOrder{
+	return AddMatchCommand{
 		TeamOneKeys: teamOneKeys,
 		TeamTwoKeys: teamTwoKeys,
 		MatchResult: matchResult,
 	}, nil
 }
 
-func tokenizeDrawMatchResultExpression(expression string) (interface{}, error) {
+func tokenizeDrawMatchResultExpression(expression string) (ParsedExpression, error) {
 	splitedUpdateExpression, err := splitUpdateExpression(expression)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func tokenizeDrawMatchResultExpression(expression string) (interface{}, error) {
 		return nil, errTeamTwoKeys
 	}
 
-	return AddMatchOrder{
+	return AddMatchCommand{
 		TeamOneKeys: teamOneKeys,
 		TeamTwoKeys: teamTwoKeys,
 		MatchResult: shared.Draw,
