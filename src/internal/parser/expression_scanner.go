@@ -2,15 +2,13 @@ package parser
 
 import (
 	"fmt"
-	"regexp"
-	"slices"
 	"strings"
 )
 
 type ExpressionScanner struct {
 	ExpressionType ExpressionType
-
-	tokens []Token
+	traceId        string
+	tokens         []Token
 }
 
 type Token struct {
@@ -21,113 +19,182 @@ type Token struct {
 type ExpressionType string
 
 const (
-	AddPlayersCommand ExpressionType = "AddPlayersCommand"
-	AddMatchCommand   ExpressionType = "AddMatchCommand"
-	SelectQuery       ExpressionType = "SelectQuery"
+	AddPlayersCommandType ExpressionType = "AddPlayersCommandType"
+	AddMatchCommandType   ExpressionType = "AddMatchCommandType"
+	SelectQueryType       ExpressionType = "SelectQueryType"
 )
 
 type TokenType string
 
 const (
-	AddPlayer  TokenType = "AddPlayer"
-	AddPlayers TokenType = "AddPlayers"
+	AddPlayer     TokenType = "AddPlayer"
+	AddPlayers    TokenType = "AddPlayers"
+	SetWin        TokenType = "SetWin"
+	SetLose       TokenType = "SetLose"
+	SetDraw       TokenType = "SetDraw"
+	SelectPlayers TokenType = "SelectPlayers"
+	OrderByAsc    TokenType = "OrderByAsc"
+	OrderByDesc   TokenType = "OrderByDesc"
 )
 
-func NewExpressionScanner() ExpressionScanner {
+func newExpressionScanner(traceId string) ExpressionScanner {
 	return ExpressionScanner{}
 }
 
-func (sc *ExpressionScanner) GetLogicalTokens() ([]Token, error) {
+func (sc *ExpressionScanner) getLogicalTokens() (ExpressionType, []Token, error) {
 	if sc.ExpressionType == "" {
-		return nil, fmt.Errorf("expression type is not determined")
+		return "", nil, fmt.Errorf("expression type is not determined")
 	}
-	return sc.tokens, nil
+	return sc.ExpressionType, sc.tokens, nil
 }
 
-const add string = "add"
-const player string = "player"
-const players string = "players"
-
-func (sc *ExpressionScanner) ScanRawExpression(expression string) error {
-	sanitazedExpression, err := sanitazeExpression(expression)
+func (sc *ExpressionScanner) scanRawExpression(expression string) error {
+	sanitazedExpression, err := sanitazeExpression(sc.traceId, expression)
 	if err != nil {
-		return nil
-	}
-	result := []Token{}
-	searchedExpression := []string{add}
-
-	expressionComponents := strings.Split(sanitazedExpression, " ")
-
-	for i := 0; i < len(expressionComponents); i++ {
-		if slices.Contains(searchedExpression, strings.ToLower(expressionComponents[i])) {
-			foundAddPlayerExpression, t, iLambda, err := scanForAddPlayerExpression(i, expressionComponents, sanitazedExpression)
-			if foundAddPlayerExpression {
-				sc.ExpressionType = ExpressionType(AddPlayer)
-				result = append(result, t)
-			}
-			if err != nil {
-				return err
-			}
-			i += iLambda
-		}
+		return err
 	}
 
-	sc.tokens = result
+	switch {
+	case isMatch(add_player, sanitazedExpression):
+		return sc.tryTokenizeAddPlayer(sanitazedExpression)
+	case isMatch(add_players, sanitazedExpression):
+		return sc.tryTokenizeAddPlayers(sanitazedExpression)
+	case isMatch(add_decisive_match, sanitazedExpression):
+		return sc.tryTokenizeSetWinAndLose(sanitazedExpression)
+	case isMatch(add_draw_match, sanitazedExpression):
+		return sc.tryTokenizeSetDraw(sanitazedExpression)
+	case isMatch(select_players, sanitazedExpression):
+		return sc.tryTokenizeSelectPlayers(sanitazedExpression)
+	default:
+		return errorCannotParseExpression(sc.traceId, expression)
+	}
+}
+
+func (sc *ExpressionScanner) tryTokenizeAddPlayer(sanitazedExpression string) error {
+	numOfMatches, tokenValue := extractKeyFromParanthesis(sanitazedExpression)
+	if numOfMatches != 1 {
+		return errorInvalidNumberOfArguments(sc.traceId, sanitazedExpression, AddPlayersCommandType, 1)
+	}
+	sc.ExpressionType = AddPlayersCommandType
+	sc.tokens = append(sc.tokens, Token{
+		AddPlayer,
+		tokenValue,
+	})
 	return nil
 }
 
-func scanForAddPlayerExpression(i int, expressionComponents []string, rawExpression string) (bool, Token, int, error) {
-	if strings.ToLower(expressionComponents[i]) == add {
-		if strings.ToLower(expressionComponents[i+1]) == player {
-			return true,
-				Token{
-					AddPlayer, []string{
-						strings.Trim(expressionComponents[i+2], "'")},
-				},
-				2,
-				nil
-		}
-		if strings.ToLower(expressionComponents[i+1]) == players {
-			keys, err := extractKeysFromRawExpression(rawExpression)
-			if err != nil {
-				return true, Token{}, 0, err
-			}
-
-			return true,
-				Token{
-					AddPlayers, keys,
-				},
-				2,
-				nil
-		}
-		return true, Token{}, 0, fmt.Errorf("wrong format of expression")
+func (sc *ExpressionScanner) tryTokenizeAddPlayers(sanitazedExpression string) error {
+	numOfMatches, tokenValue := extractKeysFromBrackets(sanitazedExpression)
+	if numOfMatches != 1 {
+		return errorInvalidNumberOfArguments(sc.traceId, sanitazedExpression, AddPlayersCommandType, 1)
 	}
-	return false, Token{}, 0, nil
+	sc.ExpressionType = AddPlayersCommandType
+	sc.tokens = append(sc.tokens, Token{
+		AddPlayers,
+		tokenValue[0],
+	})
+	return nil
 }
 
-func sanitazeExpression(expression string) (string, error) {
-	if expression[len(expression)-1:] != ";" {
-		return "", fmt.Errorf("expression should end with semicolon")
+func (sc *ExpressionScanner) tryTokenizeSetWinAndLose(sanitazedExpression string) error {
+	setWinIdx := strings.Index(strings.ToLower(sanitazedExpression), "win")
+	setLoseIdx := strings.Index(strings.ToLower(sanitazedExpression), "lose")
+	setWinFirst := setWinIdx < setLoseIdx
+
+	numOfBracketMatches, tokenBracketValue := extractKeysFromBrackets(sanitazedExpression)
+	if numOfBracketMatches == 2 {
+		sc.setWinAndLoseTokens(setWinFirst, tokenBracketValue[0], tokenBracketValue[1])
+		return nil
 	}
-	return expression[:len(expression)-1], nil
+
+	numOfParanthesisMatches, tokenParanthesisValue := extractKeyFromParanthesis(sanitazedExpression)
+	if numOfParanthesisMatches == 2 {
+		sc.setWinAndLoseTokens(setWinFirst, tokenParanthesisValue[:1], tokenParanthesisValue[1:])
+		return nil
+	}
+	return errorInvalidNumberOfArguments(sc.traceId, sanitazedExpression, AddMatchCommandType, 2)
 }
 
-func extractKeysFromRawExpression(expression string) ([]string, error) {
-	pattern := `\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)`
-	r := regexp.MustCompile(pattern)
-	match := r.FindString(expression)
+func (sc *ExpressionScanner) setWinAndLoseTokens(setWinFirst bool, firstTokenValues, secondTokenValues []string) {
+	sc.ExpressionType = AddMatchCommandType
+	if setWinFirst {
+		sc.tokens = append(sc.tokens, Token{
+			SetWin,
+			firstTokenValues,
+		})
+		sc.tokens = append(sc.tokens, Token{
+			SetLose,
+			secondTokenValues,
+		})
+	} else {
+		sc.tokens = append(sc.tokens, Token{
+			SetWin,
+			secondTokenValues,
+		})
+		sc.tokens = append(sc.tokens, Token{
+			SetLose,
+			firstTokenValues,
+		})
+	}
+}
 
-	if match == "" {
-		return nil, fmt.Errorf("cannot extract keys from given expression - %s", expression)
+func (sc *ExpressionScanner) tryTokenizeSetDraw(sanitazedExpression string) error {
+	numOfBracketMatches, tokenBracketValue := extractKeysFromBrackets(sanitazedExpression)
+	if numOfBracketMatches == 2 {
+		sc.setDrawTokens(tokenBracketValue[0], tokenBracketValue[1])
+		return nil
 	}
 
-	content := strings.Trim(match, "()")
-	items := strings.Split(content, ",")
+	numOfParanthesisMatches, tokenParanthesisValue := extractKeyFromParanthesis(sanitazedExpression)
+	if numOfParanthesisMatches == 2 {
+		sc.setDrawTokens(tokenParanthesisValue[:1], tokenParanthesisValue[1:])
+		return nil
+	}
+	return errorInvalidNumberOfArguments(sc.traceId, sanitazedExpression, AddMatchCommandType, 2)
+}
 
-	var result []string
-	for _, item := range items {
-		result = append(result, strings.Trim(strings.TrimSpace(item), "'"))
+func (sc *ExpressionScanner) setDrawTokens(firstTokenValues, secondTokenValues []string) {
+	sc.ExpressionType = ExpressionType(AddMatchCommandType)
+	sc.tokens = append(sc.tokens, Token{
+		SetDraw,
+		firstTokenValues,
+	})
+	sc.tokens = append(sc.tokens, Token{
+		SetDraw,
+		secondTokenValues,
+	})
+}
+
+func (sc *ExpressionScanner) tryTokenizeSelectPlayers(sanitazedExpression string) error {
+	sc.ExpressionType = SelectQueryType
+	sc.tokens = append(sc.tokens, Token{
+		SelectPlayers,
+		[]string{"*"},
+	})
+
+	sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
+
+	return nil
+}
+
+func (sc *ExpressionScanner) tryTokenizeOrderBySubExpression(sanitazedExpression string) {
+	isMatch, orderSubEpression := findMatch(order_by, sanitazedExpression)
+	if !isMatch {
+		return
 	}
 
-	return result, nil
+	splittedSubExpression := strings.Split(orderSubEpression, " ")
+	orderKey := splittedSubExpression[3:4]
+
+	if strings.ToLower(splittedSubExpression[4]) == "asc" {
+		sc.tokens = append(sc.tokens, Token{
+			OrderByAsc,
+			orderKey,
+		})
+	} else {
+		sc.tokens = append(sc.tokens, Token{
+			OrderByDesc,
+			orderKey,
+		})
+	}
 }

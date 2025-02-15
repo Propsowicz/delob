@@ -24,9 +24,9 @@ func NewBufferManager() (BufferManager, error) {
 	}, nil
 }
 
-func (buffer *BufferManager) AppendToLogsDictionary(correlationId, parsedExpressionType,
+func (buffer *BufferManager) AppendToLogsDictionary(traceId, parsedExpressionType,
 	parsedExpression string) error {
-	return buffer.logDataManager.Append(NewDataLog(correlationId, parsedExpressionType, parsedExpression))
+	return buffer.logDataManager.Append(NewDataLog(traceId, parsedExpressionType, parsedExpression))
 }
 
 func (buffer *BufferManager) LoadFromLogsDictionary() ([]DataLog, error) {

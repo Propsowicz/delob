@@ -2,6 +2,7 @@ package processor
 
 import (
 	buffer "delob/internal/buffer"
+	parser "delob/internal/parser"
 	elo "delob/internal/processor/elo"
 	dto "delob/internal/processor/model"
 	tokenizer "delob/internal/tokenizer"
@@ -46,14 +47,14 @@ func (p *Processor) Initialize() error {
 	}
 
 	for i := range dataLogs {
-		tokenizedExpression, err := tokenizer.ParseFromJson(dataLogs[i].ParsedExpressionType,
+		parsedExpression, err := parser.ParseDataLogJson(dataLogs[i].ParsedExpressionType,
 			dataLogs[i].ParsedExpression)
 
 		if err != nil {
 			return err
 		}
 
-		_, _, errOrder := p.handleOrders(tokenizedExpression)
+		_, _, errOrder := p.handleOrders(parsedExpression)
 		if errOrder != nil {
 			return errOrder
 		}
@@ -63,9 +64,9 @@ func (p *Processor) Initialize() error {
 
 func (p *Processor) Execute(
 	expression string) (string, error) {
-	correlationId := utils.GenerateKey()
+	traceId := utils.GenerateKey()
 
-	parsedExpression, err := tokenizer.Tokenize(expression)
+	parsedExpression, err := parser.ParseExpression(traceId, expression)
 
 	if err != nil {
 		return "", err
@@ -86,7 +87,7 @@ func (p *Processor) Execute(
 	}
 
 	return result, p.finishTransaction(
-		correlationId,
+		traceId,
 		parsedExpression,
 		isWriteOperation,
 		isTransactionSuccessful,
@@ -94,26 +95,26 @@ func (p *Processor) Execute(
 		ordersError)
 }
 
-func (p *Processor) handleOrders(orders tokenizer.ParsedExpression) (string, bool, error) {
+func (p *Processor) handleOrders(orders parser.ParsedExpression) (string, bool, error) {
 	var result string
 	var orderError error
 	var isWriteOperation bool = false
 
 	switch orders.GetType() {
-	case tokenizer.AddPlayersCommandType:
-		result, orderError = p.addPlayer(orders.(tokenizer.AddPlayersCommand).Keys)
+	case parser.AddPlayersCommandType:
+		result, orderError = p.addPlayer(orders.(parser.AddPlayersCommand).Keys)
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
-	case tokenizer.AddMatchCommandType:
-		result, orderError = p.updatePlayers(orders.(tokenizer.AddMatchCommand))
+	case parser.AddMatchCommandType:
+		result, orderError = p.updatePlayers(orders.(parser.AddMatchCommand))
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
-	case tokenizer.SelectQueryType:
-		result, orderError = p.selectPlayers(orders.(tokenizer.SelectQuery))
+	case parser.SelectQueryType:
+		result, orderError = p.selectPlayers(orders.(parser.SelectQuery))
 		if orderError != nil {
 			return result, false, orderError
 		}
@@ -124,7 +125,7 @@ func (p *Processor) handleOrders(orders tokenizer.ParsedExpression) (string, boo
 	return result, isWriteOperation, nil
 }
 
-func (p *Processor) selectPlayers(selectOrder tokenizer.SelectQuery) (string, error) {
+func (p *Processor) selectPlayers(selectOrder parser.SelectQuery) (string, error) {
 	allEntities, pagesCollections, err := p.bufferManager.GetAllPages()
 	if err != nil {
 		return "", err
@@ -137,10 +138,10 @@ func (p *Processor) selectPlayers(selectOrder tokenizer.SelectQuery) (string, er
 
 	sort.Slice(playersCollection, func(i, j int) bool {
 		switch selectOrder.OrderBy {
-		case tokenizer.Key:
-			return sortComparer(selectOrder.OrderDir == tokenizer.OrderDir(tokenizer.Asc), playersCollection[i].Key, playersCollection[j].Key)
-		case tokenizer.Elo:
-			return sortComparer(selectOrder.OrderDir == tokenizer.OrderDir(tokenizer.Asc), playersCollection[i].Elo, playersCollection[j].Elo)
+		case parser.Key:
+			return sortComparer(selectOrder.OrderDir == parser.OrderDir(tokenizer.Asc), playersCollection[i].Key, playersCollection[j].Key)
+		case parser.Elo:
+			return sortComparer(selectOrder.OrderDir == parser.OrderDir(tokenizer.Asc), playersCollection[i].Elo, playersCollection[j].Elo)
 		}
 		return sortComparer(true, playersCollection[i].Key, playersCollection[j].Key)
 	})
@@ -160,7 +161,7 @@ func sortComparer[T int16 | string](isAsc bool, leftOperand, rightOperand T) boo
 	return leftOperand > rightOperand
 }
 
-func (p *Processor) updatePlayers(addMatchOrder tokenizer.AddMatchCommand) (string, error) {
+func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand) (string, error) {
 	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(addMatchOrder.TeamOneKeys, addMatchOrder.TeamTwoKeys)
 	if err != nil {
 		return "", err
@@ -240,8 +241,8 @@ func (p *Processor) startTansaction() (bool, *transactionSteps) {
 }
 
 func (p *Processor) finishTransaction(
-	correlationId string,
-	parsedExpression tokenizer.ParsedExpression,
+	traceId string,
+	parsedExpression parser.ParsedExpression,
 	isWriteOperation bool,
 	isTransactionSuccessful bool,
 	transactionStepsTable *transactionSteps,
@@ -253,7 +254,7 @@ func (p *Processor) finishTransaction(
 	}
 
 	if isWriteOperation {
-		errWriteToLogsDict := p.bufferManager.AppendToLogsDictionary(correlationId, parsedExpression.GetType(), json)
+		errWriteToLogsDict := p.bufferManager.AppendToLogsDictionary(traceId, parsedExpression.GetStringType(), json)
 		if errWriteToLogsDict != nil {
 			return errWriteToLogsDict
 		}

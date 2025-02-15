@@ -44,15 +44,15 @@ func NewDataLogsDictionaryManager() (DataLogsDictionaryManager, error) {
 }
 
 type DataLog struct {
-	CorrelationId        string
+	TraceId              string
 	AddTimestamp         int64
 	ParsedExpressionType string
 	ParsedExpression     string
 }
 
-func NewDataLog(correlationId, parsedExpressionType, parsedExpression string) DataLog {
+func NewDataLog(traceId, parsedExpressionType, parsedExpression string) DataLog {
 	return DataLog{
-		CorrelationId:        correlationId,
+		TraceId:              traceId,
 		AddTimestamp:         utils.Timestamp(),
 		ParsedExpressionType: parsedExpressionType,
 		ParsedExpression:     parsedExpression,
