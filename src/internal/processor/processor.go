@@ -5,8 +5,7 @@ import (
 	parser "delob/internal/parser"
 	elo "delob/internal/processor/elo"
 	dto "delob/internal/processor/model"
-	tokenizer "delob/internal/tokenizer"
-	"delob/internal/utils"
+	"delob/internal/utils/logger"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -63,8 +62,8 @@ func (p *Processor) Initialize() error {
 }
 
 func (p *Processor) Execute(
-	expression string) (string, error) {
-	traceId := utils.GenerateKey()
+	traceId, expression string) (string, error) {
+	logger.Info(traceId, fmt.Sprintf("Processing expression: %s", expression))
 
 	parsedExpression, err := parser.ParseExpression(traceId, expression)
 
@@ -139,9 +138,9 @@ func (p *Processor) selectPlayers(selectOrder parser.SelectQuery) (string, error
 	sort.Slice(playersCollection, func(i, j int) bool {
 		switch selectOrder.OrderBy {
 		case parser.Key:
-			return sortComparer(selectOrder.OrderDir == parser.OrderDir(tokenizer.Asc), playersCollection[i].Key, playersCollection[j].Key)
+			return sortComparer(selectOrder.OrderDir == parser.OrderDir(parser.Asc), playersCollection[i].Key, playersCollection[j].Key)
 		case parser.Elo:
-			return sortComparer(selectOrder.OrderDir == parser.OrderDir(tokenizer.Asc), playersCollection[i].Elo, playersCollection[j].Elo)
+			return sortComparer(selectOrder.OrderDir == parser.OrderDir(parser.Asc), playersCollection[i].Elo, playersCollection[j].Elo)
 		}
 		return sortComparer(true, playersCollection[i].Key, playersCollection[j].Key)
 	})

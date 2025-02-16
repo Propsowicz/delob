@@ -33,7 +33,7 @@ func Test_IfCanNotTokenizeExpressionWithoutSemicolonEnds(t *testing.T) {
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tom'"
 
-	_, err := p.Execute(expressionMock)
+	_, err := p.Execute("traceId", expressionMock)
 
 	if err == nil {
 		t.Errorf("Should throw error.")
@@ -48,7 +48,7 @@ func Test_IfCanAddOnePlayer(t *testing.T) {
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tom';"
 
-	result, err := p.Execute(expressionMock)
+	result, err := p.Execute("traceId", expressionMock)
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -67,7 +67,7 @@ func Test_IfCanAddTwoPlayers(t *testing.T) {
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYERS ('Tom', 'Joe');"
 
-	result, err := p.Execute(expressionMock)
+	result, err := p.Execute("traceId", expressionMock)
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -87,8 +87,8 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	firstExpressionMock := "ADD PLAYER 'Tom';"
 	secondExpressionMock := "ADD PLAYERS ('Tom', 'Joe' );"
 
-	result1, err1 := p.Execute(firstExpressionMock)
-	result2, err2 := p.Execute(secondExpressionMock)
+	result1, err1 := p.Execute("traceId", firstExpressionMock)
+	result2, err2 := p.Execute("traceId", secondExpressionMock)
 
 	if err1 != nil {
 		t.Errorf("Should not throw error.")
@@ -114,9 +114,9 @@ func Test_IfCannotUpdateWhenIdDoesnNotExists_Case1(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Tom';"
-	p.Execute(expressionMock)
+	p.Execute("traceId", expressionMock)
 
-	_, err := p.Execute("SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+	_, err := p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
 
 	if err == nil {
 		t.Errorf("Should throw error.")
@@ -130,9 +130,9 @@ func Test_IfCannotUpdateWhenIdDoesnNotExists_Case2(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 	expressionMock := "ADD PLAYER 'Joe';"
-	p.Execute(expressionMock)
+	p.Execute("traceId", expressionMock)
 
-	_, err := p.Execute("SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+	_, err := p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
 
 	if err == nil {
 		t.Errorf("Should throw error.")
@@ -146,8 +146,8 @@ func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYER 'Tom';")
-	result, err := p.Execute("SELECT Players;")
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	result, err := p.Execute("traceId", "SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -162,9 +162,9 @@ func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYER 'Tom';")
-	p.Execute("ADD PLAYER 'Joe';")
-	result, err := p.Execute("SELECT Players;")
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Joe';")
+	result, err := p.Execute("traceId", "SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -179,13 +179,13 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYER 'Tom';")
-	p.Execute("ADD PLAYER 'Joe';")
-	p.Execute("SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
-	p.Execute("SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
-	p.Execute("SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
 
-	result, err := p.Execute("SELECT Players;")
+	result, err := p.Execute("traceId", "SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -200,15 +200,15 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYER 'Tom';")
-	p.Execute("ADD PLAYER 'Joe';")
-	p.Execute("SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
-	p.Execute("SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
-	p.Execute("SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
-	p.Execute("SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
-	p.Execute("SET DRAW BETWEEN 'Joe' AND 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
+	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
+	p.Execute("traceId", "SET DRAW BETWEEN 'Joe' AND 'Tom';")
 
-	result, err := p.Execute("SELECT Players;")
+	result, err := p.Execute("traceId", "SELECT Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -223,10 +223,10 @@ func Test_IfCanSortAscendingByPlayerKey(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYERS ('A', 'C', 'E');")
-	p.Execute("ADD PLAYERS ('B', 'D');")
+	p.Execute("traceId", "ADD PLAYERS ('A', 'C', 'E');")
+	p.Execute("traceId", "ADD PLAYERS ('B', 'D');")
 
-	result, _ := p.Execute("SELECT Players ORDER BY Key ASC;")
+	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Key ASC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -244,10 +244,10 @@ func Test_IfCanSortDescendingByPlayerKey(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYERS ('A', 'C', 'E');")
-	p.Execute("ADD PLAYERS ('B', 'D');")
+	p.Execute("traceId", "ADD PLAYERS ('A', 'C', 'E');")
+	p.Execute("traceId", "ADD PLAYERS ('B', 'D');")
 
-	result, _ := p.Execute("SELECT Players ORDER BY Key DESC;")
+	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Key DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -265,12 +265,12 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("ADD PLAYERS ('A', 'B', 'X');")
+	p.Execute("traceId", "ADD PLAYERS ('A', 'B', 'X');")
 
-	p.Execute("SET WIN FOR 'B' AND LOSE FOR 'X';")
-	result, _ := p.Execute("SELECT Players ORDER BY Elo DESC;")
-	p.Execute("SET WIN FOR 'B' AND LOSE FOR 'X';")
-	p.Execute("SET WIN FOR 'A' AND LOSE FOR 'X';")
+	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
+	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
+	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
+	p.Execute("traceId", "SET WIN FOR 'A' AND LOSE FOR 'X';")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
