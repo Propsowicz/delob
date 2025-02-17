@@ -15,8 +15,12 @@ func setupSuite(_ *testing.T) func(t *testing.T) {
 	}
 }
 
+// most of these tests can easily be moved to processor test
+
 const upodateEloValue int16 = 25
 const initElo int16 = 1500
+
+var transactionMock Transaction = NewTransaction()
 
 func Test_IfCanAddPlayerToBuffer(t *testing.T) {
 	teardownSuite := setupSuite(t)
@@ -25,7 +29,9 @@ func Test_IfCanAddPlayerToBuffer(t *testing.T) {
 	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 
-	err := bufferManager.AddPlayer(entityIdMock, initElo, nil)
+	err := bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	transactionMock.Finish(true)
+
 	result, getPageErr := bufferManager.GetPages(entityIdMock)
 
 	if err != nil {
@@ -61,8 +67,28 @@ func Test_IfGetErrorWhenTryToAddExistingPlayerToBuffer(t *testing.T) {
 	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
 
-	err1 := bufferManager.AddPlayer(entityIdMock, initElo, nil)
-	err2 := bufferManager.AddPlayer(entityIdMock, initElo, nil)
+	err1 := bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	transactionMock.Finish(true)
+	err2 := bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+
+	if err1 != nil {
+		t.Errorf("Should create player without any errors.")
+	}
+	if err2 == nil {
+		t.Errorf("Should NOT create player.")
+	}
+}
+
+func Test_IfGetErrorWhenTryToAddExistingPlayerToBufferBeforeFinishTransaction(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := NewBufferManager()
+	entityIdMock := "123987"
+
+	err1 := bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	err2 := bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	transactionMock.Finish(true)
 
 	if err1 != nil {
 		t.Errorf("Should create player without any errors.")
@@ -92,7 +118,8 @@ func Test_IfCanUpdatePlayerWhenCanAddToExistingPage(t *testing.T) {
 
 	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
-	bufferManager.AddPlayer(entityIdMock, initElo, nil)
+	bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	transactionMock.Finish(true)
 
 	err := bufferManager.UpdatePlayer(entityIdMock, upodateEloValue, nil)
 
@@ -119,8 +146,8 @@ func Test_IfCanUpdatePlayerWhenThereIsOnlyOneSlotInPage(t *testing.T) {
 
 	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
-	bufferManager.AddPlayer(entityIdMock, initElo, nil)
-
+	bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	transactionMock.Finish(true)
 	for i := 0; i < int(utils.PAGE_SIZE)-2; i++ {
 		bufferManager.UpdatePlayer(entityIdMock, upodateEloValue, nil)
 	}
@@ -150,8 +177,8 @@ func Test_IfCanUpdatePlayerWhenPageIsFull(t *testing.T) {
 
 	bufferManager, _ := NewBufferManager()
 	entityIdMock := "123987"
-	bufferManager.AddPlayer(entityIdMock, initElo, nil)
-
+	bufferManager.AddPlayer(entityIdMock, initElo, nil, &transactionMock)
+	transactionMock.Finish(true)
 	for i := 0; i < int(utils.PAGE_SIZE)-1; i++ {
 		bufferManager.UpdatePlayer(entityIdMock, upodateEloValue, nil)
 	}
