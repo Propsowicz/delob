@@ -24,10 +24,12 @@ func main() {
 	// OK 1. integration tests
 	// OK 2. refactor tokenizer -> token scan -> parser
 	// OK 3. add tcp
-	// 4. add SCRAM
+	// 4. add SCRAM (user, credentials, store, handshake, session store)
 	// 5. add pipeline
 	// 6. dockerize
+	// 7. backup
 	// FIX: order by elo asc; works but should throw since it needs to be Elo not elo
+	// FIX: parse -> should not be able to use key more than once
 
 	// need to handle transaction -> optimistic locking?
 	bufferManager, err := buffer.NewBufferManager()
