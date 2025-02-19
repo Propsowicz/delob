@@ -10,26 +10,24 @@ type PageDictionary struct {
 }
 
 type PageData struct {
-	hashedEntityId    uint32
-	entityId          string
-	pageAdresses      []*Page
-	transactionStatus transactionStatus
+	hashedEntityId uint32
+	entityId       string
+	pageAdresses   []*Page
 }
 
-func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) (*PageData, error) {
+func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) error {
 	hashedEntityId, err := hasher.Calculate(entityId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	newPageData := PageData{
-		hashedEntityId:    hashedEntityId,
-		entityId:          entityId,
-		pageAdresses:      []*Page{pageAdress},
-		transactionStatus: inProgress,
+		hashedEntityId: hashedEntityId,
+		entityId:       entityId,
+		pageAdresses:   []*Page{pageAdress},
 	}
 	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, newPageData)
-	return &buffer.pageDictionary.pagesData[len(buffer.pageDictionary.pagesData)-1], nil
+	return nil
 }
 
 func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress *Page) error {
@@ -48,18 +46,7 @@ func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress 
 	return nil
 }
 
-type transactionStatusCondition func(transactionStatus transactionStatus) bool
-
-func isInProgressOrSuccess(transactionStatus transactionStatus) bool {
-	return transactionStatus == success || transactionStatus == inProgress
-}
-
-func isSuccess(transactionStatus transactionStatus) bool {
-	return transactionStatus == success
-}
-
-func (buffer *BufferManager) getPageAdresses(entityId string,
-	transactionStatusCondition transactionStatusCondition) ([]*Page, error) {
+func (buffer *BufferManager) getPageAdresses(entityId string) ([]*Page, error) {
 	hashedEntityId, err := hasher.Calculate(entityId)
 	if err != nil {
 		return nil, err
@@ -67,10 +54,7 @@ func (buffer *BufferManager) getPageAdresses(entityId string,
 
 	for i := range buffer.pageDictionary.pagesData {
 		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
-			if transactionStatusCondition(buffer.pageDictionary.pagesData[i].transactionStatus) {
-				return buffer.pageDictionary.pagesData[i].pageAdresses, nil
-			}
-			return nil, errors.New("cannot find entity with given id")
+			return buffer.pageDictionary.pagesData[i].pageAdresses, nil
 		}
 	}
 	return nil, errors.New("cannot find entity with given id")

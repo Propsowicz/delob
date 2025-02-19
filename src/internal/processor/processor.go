@@ -53,7 +53,7 @@ func (p *Processor) Initialize() error {
 			return err
 		}
 
-		_, _, errOrder := p.handleOrders(parsedExpression, nil)
+		_, _, errOrder := p.handleOrders(parsedExpression)
 		if errOrder != nil {
 			return errOrder
 		}
@@ -71,13 +71,6 @@ func (p *Processor) Execute(
 		return "", err
 	}
 
-	transaction := buffer.NewTransaction()
-	transaction.Start()
-	// 1. start transaction
-	// 2. setIsDirty for every entity that has been modifed
-	// 3. ommit every isDirty when loading
-	// 4. set isDirty to false when transaction is successful
-
 	// transactionId -> create file that is going to collect transactions steps in case of reverting it
 	// steps:
 	// add to page-manager
@@ -87,7 +80,7 @@ func (p *Processor) Execute(
 	// transactionId := time.Now().Nanosecond()
 	isTransactionSuccessful, transactionStepsTable := p.startTansaction()
 
-	result, isWriteOperation, ordersError := p.handleOrders(parsedExpression, &transaction)
+	result, isWriteOperation, ordersError := p.handleOrders(parsedExpression)
 	if ordersError == nil {
 		isTransactionSuccessful = true
 	}
@@ -101,26 +94,26 @@ func (p *Processor) Execute(
 		ordersError)
 }
 
-func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, transaction *buffer.Transaction) (string, bool, error) {
+func (p *Processor) handleOrders(orders parser.ParsedExpression) (string, bool, error) {
 	var result string
 	var orderError error
 	var isWriteOperation bool = false
 
-	switch parsedExpression.GetType() {
+	switch orders.GetType() {
 	case parser.AddPlayersCommandType:
-		result, orderError = p.addPlayer(parsedExpression.(parser.AddPlayersCommand).Keys, transaction)
+		result, orderError = p.addPlayer(orders.(parser.AddPlayersCommand).Keys)
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
 	case parser.AddMatchCommandType:
-		result, orderError = p.updatePlayers(parsedExpression.(parser.AddMatchCommand))
+		result, orderError = p.updatePlayers(orders.(parser.AddMatchCommand))
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
 	case parser.SelectQueryType:
-		result, orderError = p.selectPlayers(parsedExpression.(parser.SelectQuery))
+		result, orderError = p.selectPlayers(orders.(parser.SelectQuery))
 		if orderError != nil {
 			return result, false, orderError
 		}
@@ -219,13 +212,13 @@ func (p *Processor) getPlayerByKey(entityId string) (dto.Player, error) {
 	return dto.NewPlayer(entityId, pages), nil
 }
 
-func (p *Processor) addPlayer(order []string, transaction *buffer.Transaction) (string, error) {
+func (p *Processor) addPlayer(order []string) (string, error) {
 	var numberOfAddedPlayers int16
 	var isFullySuccessful bool = true
 	var invalidEntityIds []string
 
 	for i := range order {
-		err := p.bufferManager.AddPlayer(order[i], elo.INITIAL_ELO, nil, transaction)
+		err := p.bufferManager.AddPlayer(order[i], elo.INITIAL_ELO, nil)
 		if err != nil {
 			isFullySuccessful = false
 			invalidEntityIds = append(invalidEntityIds, order[i])

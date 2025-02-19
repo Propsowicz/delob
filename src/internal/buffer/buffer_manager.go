@@ -5,14 +5,6 @@ import (
 	"sync"
 )
 
-type transactionStatus int8
-
-const (
-	failed     = 0
-	success    = 1
-	inProgress = 2
-)
-
 type BufferManager struct {
 	logDataManager *DataLogsDictionaryManager
 	syncMutex      sync.Mutex
@@ -49,8 +41,9 @@ func (buffer *BufferManager) LoadFromLogsDictionary() ([]DataLog, error) {
 	return result, nil
 }
 
-func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *Match, transaction *Transaction) error {
-	if _, err := buffer.getPageAdresses(entityId, isInProgressOrSuccess); err == nil {
+func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *Match) error {
+	// move it to processor?
+	if _, err := buffer.getPageAdresses(entityId); err == nil {
 		return fmt.Errorf("player already exists: %s", entityId)
 	}
 
@@ -58,11 +51,10 @@ func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *M
 
 	buffer.syncMutex.Lock()
 
-	pageDictAdress, err := buffer.addPageToDictionary(entityId, pageAdress)
+	err := buffer.addPageToDictionary(entityId, pageAdress)
 	if err != nil {
 		return err
 	}
-	transaction.AddPageDictionaryPointer(pageDictAdress)
 
 	buffer.syncMutex.Unlock()
 	return nil
@@ -101,7 +93,7 @@ func (buffer *BufferManager) UpdatePlayer(entityId string, value int16, matchRef
 }
 
 func (buffer *BufferManager) GetPages(entityId string) ([]Page, error) {
-	pageAdresses, err := buffer.getPageAdresses(entityId, isSuccess)
+	pageAdresses, err := buffer.getPageAdresses(entityId)
 	if err != nil {
 		return []Page{}, err
 	}
@@ -143,7 +135,7 @@ func (buffer *BufferManager) addPage(entityId string, value int16, matchRef *Mat
 }
 
 func (buffer *BufferManager) tryAppendToPage(entityId string, value int16, matchRef *Match) (bool, error) {
-	pageAdresses, err := buffer.getPageAdresses(entityId, isSuccess)
+	pageAdresses, err := buffer.getPageAdresses(entityId)
 	if err != nil {
 		return false, err
 	}
