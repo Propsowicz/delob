@@ -77,6 +77,7 @@ func (p *Processor) Execute(
 	// 2. setIsDirty for every entity that has been modifed
 	// 3. ommit every isDirty when loading
 	// 4. set isDirty to false when transaction is successful
+	//
 
 	// transactionId -> create file that is going to collect transactions steps in case of reverting it
 	// steps:
