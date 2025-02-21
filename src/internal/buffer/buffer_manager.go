@@ -59,9 +59,11 @@ func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *M
 	buffer.syncMutex.Lock()
 
 	pageDictAdress, err := buffer.addPageToDictionary(entityId, pageAdress)
+
 	if err != nil {
 		return err
 	}
+
 	transaction.AddPageDictionaryPointer(pageDictAdress)
 
 	buffer.syncMutex.Unlock()

@@ -46,6 +46,8 @@ func (p *Processor) Initialize() error {
 	}
 
 	for i := range dataLogs {
+		transaction := buffer.NewTransaction()
+		transaction.Start()
 		parsedExpression, err := parser.ParseDataLogJson(dataLogs[i].ParsedExpressionType,
 			dataLogs[i].ParsedExpression)
 
@@ -53,10 +55,13 @@ func (p *Processor) Initialize() error {
 			return err
 		}
 
-		_, _, errOrder := p.handleOrders(parsedExpression, nil)
-		if errOrder != nil {
+		_, _, errOrder := p.handleOrders(parsedExpression, &transaction)
+
+		if !transaction.EvaluateTransactionSuccess(errOrder) {
 			return errOrder
 		}
+
+		transaction.Finish()
 	}
 	return nil
 }
@@ -85,20 +90,14 @@ func (p *Processor) Execute(
 
 	// should be smth different
 	// transactionId := time.Now().Nanosecond()
-	isTransactionSuccessful, transactionStepsTable := p.startTansaction()
-
-	result, isWriteOperation, ordersError := p.handleOrders(parsedExpression, &transaction)
-	if ordersError == nil {
-		isTransactionSuccessful = true
-	}
+	result, isWriteOperation, orderError := p.handleOrders(parsedExpression, &transaction)
 
 	return result, p.finishTransaction(
 		traceId,
 		parsedExpression,
 		isWriteOperation,
-		isTransactionSuccessful,
-		transactionStepsTable,
-		ordersError)
+		orderError,
+		transaction)
 }
 
 func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, transaction *buffer.Transaction) (string, bool, error) {
@@ -250,10 +249,12 @@ func (p *Processor) finishTransaction(
 	traceId string,
 	parsedExpression parser.ParsedExpression,
 	isWriteOperation bool,
-	isTransactionSuccessful bool,
-	transactionStepsTable *transactionSteps,
-	errorFromOrder error) error {
+	orderError error,
+	transaction buffer.Transaction) error {
 
+	if !transaction.EvaluateTransactionSuccess(orderError) {
+		return orderError
+	}
 	json, err := parsedExpression.ToJson()
 	if err != nil {
 		return err
@@ -264,12 +265,7 @@ func (p *Processor) finishTransaction(
 		if errWriteToLogsDict != nil {
 			return errWriteToLogsDict
 		}
-	}
-
-	if !isTransactionSuccessful {
-		revertChanges(1)
-
-		return errorFromOrder
+		transaction.Finish()
 	}
 
 	return nil

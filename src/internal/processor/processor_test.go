@@ -265,12 +265,16 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("traceId", "ADD PLAYERS ('A', 'B', 'X');")
+	_, err := p.Execute("traceId", "ADD PLAYERS ('A', 'B', 'X');")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
 
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
-	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
 	p.Execute("traceId", "SET WIN FOR 'A' AND LOSE FOR 'X';")
+	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)

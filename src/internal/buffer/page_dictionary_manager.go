@@ -2,11 +2,11 @@ package buffer
 
 import (
 	hasher "delob/internal/utils"
-	"errors"
+	"fmt"
 )
 
 type PageDictionary struct {
-	pagesData []PageData
+	pagesData []*PageData
 }
 
 type PageData struct {
@@ -28,8 +28,8 @@ func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Pa
 		pageAdresses:      []*Page{pageAdress},
 		transactionStatus: inProgress,
 	}
-	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, newPageData)
-	return &buffer.pageDictionary.pagesData[len(buffer.pageDictionary.pagesData)-1], nil
+	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, &newPageData)
+	return buffer.pageDictionary.pagesData[len(buffer.pageDictionary.pagesData)-1], nil
 }
 
 func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress *Page) error {
@@ -70,8 +70,8 @@ func (buffer *BufferManager) getPageAdresses(entityId string,
 			if transactionStatusCondition(buffer.pageDictionary.pagesData[i].transactionStatus) {
 				return buffer.pageDictionary.pagesData[i].pageAdresses, nil
 			}
-			return nil, errors.New("cannot find entity with given id")
+			return nil, fmt.Errorf("cannot find entity with given id: %s", entityId)
 		}
 	}
-	return nil, errors.New("cannot find entity with given id")
+	return nil, fmt.Errorf("cannot find entity with given id: %s", entityId)
 }
