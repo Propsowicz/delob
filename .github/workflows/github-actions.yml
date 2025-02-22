@@ -1,0 +1,32 @@
+name: delob database pipeline
+run-name: pull-request
+
+on: 
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  delob_unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout_code
+        uses: actions/checkout@v3
+
+      - name: install_go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22.4'
+
+      - name: cache_go_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: run_tests
+        run: |
+          cd src
+          go test ./...
