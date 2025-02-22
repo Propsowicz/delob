@@ -67,6 +67,10 @@ func (buffer *BufferManager) getPageAdresses(entityId string,
 
 	for i := range buffer.pageDictionary.pagesData {
 		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
+			if buffer.pageDictionary.pagesData[i].transactionStatus == failed {
+				continue
+			}
+
 			if transactionStatusCondition(buffer.pageDictionary.pagesData[i].transactionStatus) {
 				return buffer.pageDictionary.pagesData[i].pageAdresses, nil
 			}

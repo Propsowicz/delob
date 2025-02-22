@@ -234,23 +234,24 @@ func (p *Processor) finishTransaction(
 	isWriteOperation bool,
 	orderError error,
 	transaction *buffer.Transaction) error {
+	isOperationSuccessful := transaction.EvaluateTransactionSuccess(orderError)
 
-	if !transaction.EvaluateTransactionSuccess(orderError) {
-		return orderError
-	}
 	json, err := parsedExpression.ToJson()
 	if err != nil {
 		return err
 	}
 
-	if isWriteOperation {
+	if isWriteOperation && isOperationSuccessful {
 		errWriteToLogsDict := p.bufferManager.AppendToDataLogsDictionary(traceId, parsedExpression.GetStringType(), json)
 		if errWriteToLogsDict != nil {
 			return errWriteToLogsDict
 		}
-		transaction.Finish()
 	}
+	transaction.Finish()
 
+	if !isOperationSuccessful {
+		return orderError
+	}
 	return nil
 }
 
