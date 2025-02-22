@@ -40,7 +40,7 @@ type addToLogs struct {
 }
 
 func (p *Processor) Initialize() error {
-	dataLogs, err := p.bufferManager.LoadFromLogsDictionary()
+	dataLogs, err := p.bufferManager.LoadFromDataLogsDictionary()
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, trans
 			return result, false, orderError
 		}
 	case parser.AddMatchCommandType:
-		result, orderError = p.updatePlayers(parsedExpression.(parser.AddMatchCommand))
+		result, orderError = p.updatePlayers(parsedExpression.(parser.AddMatchCommand), transaction)
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
@@ -166,7 +166,7 @@ func sortComparer[T int16 | string](isAsc bool, leftOperand, rightOperand T) boo
 	return leftOperand > rightOperand
 }
 
-func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand) (string, error) {
+func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand, transaction *buffer.Transaction) (string, error) {
 	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(addMatchOrder.TeamOneKeys, addMatchOrder.TeamTwoKeys)
 	if err != nil {
 		return "", err
@@ -177,11 +177,11 @@ func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand) (string,
 
 	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, addMatchOrder.MatchResult)
 
-	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(teamOneKeys, calc.TeamOneEloLambda(), match)
+	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(teamOneKeys, calc.TeamOneEloLambda(), match, transaction)
 	if errTeamOneUpdate != nil {
 		return "", errTeamOneUpdate
 	}
-	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(teamTwoKeys, calc.TeamTwoEloLambda(), match)
+	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(teamTwoKeys, calc.TeamTwoEloLambda(), match, transaction)
 	if errTeamTwoUpdate != nil {
 		return "", errTeamTwoUpdate
 	}
@@ -234,10 +234,8 @@ func (p *Processor) addPlayer(order []string, transaction *buffer.Transaction) (
 	}
 
 	if !isFullySuccessful {
-		return affectNumberOfRowsMessage(numberOfAddedPlayers),
-			fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidEntityIds, " | "))
+		return "", fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidEntityIds, " | "))
 	}
-
 	return affectNumberOfRowsMessage(numberOfAddedPlayers), nil
 }
 
@@ -261,7 +259,7 @@ func (p *Processor) finishTransaction(
 	}
 
 	if isWriteOperation {
-		errWriteToLogsDict := p.bufferManager.AppendToLogsDictionary(traceId, parsedExpression.GetStringType(), json)
+		errWriteToLogsDict := p.bufferManager.AppendToDataLogsDictionary(traceId, parsedExpression.GetStringType(), json)
 		if errWriteToLogsDict != nil {
 			return errWriteToLogsDict
 		}

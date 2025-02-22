@@ -100,9 +100,6 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	if err2 == nil {
 		t.Errorf("Should throw error.")
 	}
-	if result2 != "1 row(s) affected" {
-		t.Errorf("Adding should affect 1 row.")
-	}
 	snaps.MatchSnapshot(t, result1)
 	snaps.MatchSnapshot(t, result2)
 }

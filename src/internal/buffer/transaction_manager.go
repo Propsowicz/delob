@@ -1,7 +1,6 @@
 package buffer
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -9,7 +8,7 @@ type Transaction struct {
 	status                               transactionStatus
 	shouldSuccessfulyCompleteTransaction bool
 	pageDictionaryPointers               []*PageData
-	pagePointers                         []*Page
+	recordPointers                       []*Record
 	pageMatchPointers                    []*Match
 	syncMutex                            sync.Mutex
 }
@@ -22,7 +21,7 @@ func (t *Transaction) Start() {
 	t.status = inProgress
 	t.shouldSuccessfulyCompleteTransaction = false
 	t.pageDictionaryPointers = []*PageData{}
-	t.pagePointers = []*Page{}
+	t.recordPointers = []*Record{}
 	t.pageMatchPointers = []*Match{}
 }
 
@@ -38,6 +37,10 @@ func (t *Transaction) AddPageDictionaryPointer(pageDict *PageData) {
 	t.pageDictionaryPointers = append(t.pageDictionaryPointers, pageDict)
 }
 
+func (t *Transaction) AddPageRecordPointer(record *Record) {
+	t.recordPointers = append(t.recordPointers, record)
+}
+
 func (t *Transaction) Finish() {
 	var transactionStatus transactionStatus
 	if t.shouldSuccessfulyCompleteTransaction {
@@ -46,14 +49,16 @@ func (t *Transaction) Finish() {
 		transactionStatus = failed
 	}
 
-	t.syncMutex.Lock()
-
 	for i := range t.pageDictionaryPointers {
-		fmt.Println(&t.pageDictionaryPointers[i])
+		t.syncMutex.Lock()
 		t.pageDictionaryPointers[i].transactionStatus = transactionStatus
+		t.syncMutex.Unlock()
 	}
 
-	t.syncMutex.Unlock()
+	for i := range t.recordPointers {
+
+		t.recordPointers[i].transactionStatus = transactionStatus
+	}
 }
 
 func (t *Transaction) changeTransationStatus(isSuccessful bool) {
