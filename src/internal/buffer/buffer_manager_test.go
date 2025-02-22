@@ -245,7 +245,11 @@ func Test_IfCanAppendMatchToBuffer(t *testing.T) {
 	teamTwoKeys := []string{"3", "4"}
 	matchResult := 0
 
-	result := bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(matchResult))
+	transaction_1 := NewTransaction()
+	transaction_1.Start()
+	result := bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(matchResult), &transaction_1)
+	transaction_1.EvaluateTransactionSuccess(nil)
+	transaction_1.Finish()
 
 	if len(result.TeamOneKeys) != 2 {
 		t.Errorf("There should be two players in team one.")

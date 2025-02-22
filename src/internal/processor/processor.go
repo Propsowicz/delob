@@ -78,18 +78,7 @@ func (p *Processor) Execute(
 
 	transaction := buffer.NewTransaction()
 	transaction.Start()
-	// 1. start transaction
-	// 2. setIsDirty for every entity that has been modifed
-	// 3. ommit every isDirty when loading
-	// 4. set isDirty to false when transaction is successful
 
-	// transactionId -> create file that is going to collect transactions steps in case of reverting it
-	// steps:
-	// add to page-manager
-	// save to in-memory buffer
-
-	// should be smth different
-	// transactionId := time.Now().Nanosecond()
 	result, isWriteOperation, orderError := p.handleOrders(parsedExpression, &transaction)
 
 	return result, p.finishTransaction(
@@ -97,7 +86,7 @@ func (p *Processor) Execute(
 		parsedExpression,
 		isWriteOperation,
 		orderError,
-		transaction)
+		&transaction)
 }
 
 func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, transaction *buffer.Transaction) (string, bool, error) {
@@ -173,7 +162,7 @@ func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand, transact
 	}
 	teamOneKeys, teamTwoKeys := dto.MapPlayerToKeysCollection(teamOnePlayers), dto.MapPlayerToKeysCollection(teamTwoPlayers)
 
-	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(addMatchOrder.MatchResult))
+	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(addMatchOrder.MatchResult), transaction)
 
 	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, addMatchOrder.MatchResult)
 
@@ -239,16 +228,12 @@ func (p *Processor) addPlayer(order []string, transaction *buffer.Transaction) (
 	return affectNumberOfRowsMessage(numberOfAddedPlayers), nil
 }
 
-func (p *Processor) startTansaction() (bool, *transactionSteps) {
-	return false, &transactionSteps{}
-}
-
 func (p *Processor) finishTransaction(
 	traceId string,
 	parsedExpression parser.ParsedExpression,
 	isWriteOperation bool,
 	orderError error,
-	transaction buffer.Transaction) error {
+	transaction *buffer.Transaction) error {
 
 	if !transaction.EvaluateTransactionSuccess(orderError) {
 		return orderError
@@ -266,11 +251,6 @@ func (p *Processor) finishTransaction(
 		transaction.Finish()
 	}
 
-	return nil
-}
-
-func revertChanges(transactionId int) error {
-	// in terms of error the records should be marked - isDirty and deleted?
 	return nil
 }
 

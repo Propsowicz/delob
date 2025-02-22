@@ -9,7 +9,7 @@ type Transaction struct {
 	shouldSuccessfulyCompleteTransaction bool
 	pageDictionaryPointers               []*PageData
 	recordPointers                       []*Record
-	pageMatchPointers                    []*Match
+	matchPointers                        []*Match
 	syncMutex                            sync.Mutex
 }
 
@@ -22,7 +22,7 @@ func (t *Transaction) Start() {
 	t.shouldSuccessfulyCompleteTransaction = false
 	t.pageDictionaryPointers = []*PageData{}
 	t.recordPointers = []*Record{}
-	t.pageMatchPointers = []*Match{}
+	t.matchPointers = []*Match{}
 }
 
 func (t *Transaction) EvaluateTransactionSuccess(err error) bool {
@@ -37,8 +37,12 @@ func (t *Transaction) AddPageDictionaryPointer(pageDict *PageData) {
 	t.pageDictionaryPointers = append(t.pageDictionaryPointers, pageDict)
 }
 
-func (t *Transaction) AddPageRecordPointer(record *Record) {
+func (t *Transaction) AddRecordPointer(record *Record) {
 	t.recordPointers = append(t.recordPointers, record)
+}
+
+func (t *Transaction) AddMatchPointer(match *Match) {
+	t.matchPointers = append(t.matchPointers, match)
 }
 
 func (t *Transaction) Finish() {
@@ -56,15 +60,10 @@ func (t *Transaction) Finish() {
 	}
 
 	for i := range t.recordPointers {
-
 		t.recordPointers[i].transactionStatus = transactionStatus
 	}
-}
 
-func (t *Transaction) changeTransationStatus(isSuccessful bool) {
-
-}
-
-func (t *Transaction) Clean() {
-
+	for i := range t.matchPointers {
+		t.matchPointers[i].transactionStatus = transactionStatus
+	}
 }

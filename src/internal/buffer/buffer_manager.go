@@ -18,7 +18,7 @@ type BufferManager struct {
 	syncMutex      sync.Mutex
 	pageDictionary PageDictionary
 	pages          []*Page
-	matches        []Match
+	matches        []*Match
 }
 
 func NewBufferManager() (BufferManager, error) {
@@ -104,9 +104,9 @@ func (buffer *BufferManager) UpdatePlayer(entityId string, value int16, matchRef
 	return nil
 }
 
-func (buffer *BufferManager) AddMatchEvent(teamOneKeys []string, teamTwoKeys []string, matchResult int8) *Match {
-	newMatch := newMatch(teamOneKeys, teamTwoKeys, matchResult)
+func (buffer *BufferManager) AddMatchEvent(teamOneKeys []string, teamTwoKeys []string, matchResult int8, transaction *Transaction) *Match {
+	newMatch := newMatch(teamOneKeys, teamTwoKeys, matchResult, transaction)
 
 	buffer.matches = append(buffer.matches, newMatch)
-	return &buffer.matches[len(buffer.matches)-1]
+	return buffer.matches[len(buffer.matches)-1]
 }

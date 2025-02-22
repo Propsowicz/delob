@@ -69,5 +69,29 @@ func Test_IfCannotReadDirtyPageRecords(t *testing.T) {
 	if result_3[len(result_3)-1].Body[1].transactionStatus != success {
 		t.Errorf("New record should also be visible")
 	}
+}
 
+func Test_IfMatchesChangesStatusAfterTransactionFinish(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := NewBufferManager()
+	teamOneKeys := []string{"1", "2"}
+	teamTwoKeys := []string{"3", "4"}
+	matchResult := 0
+
+	transaction_1 := NewTransaction()
+	transaction_1.Start()
+	result := bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(matchResult), &transaction_1)
+
+	if result.transactionStatus != inProgress {
+		t.Errorf("match status should be inProgress.")
+	}
+
+	transaction_1.EvaluateTransactionSuccess(nil)
+	transaction_1.Finish()
+
+	if result.transactionStatus != success {
+		t.Errorf("match status should be success.")
+	}
 }

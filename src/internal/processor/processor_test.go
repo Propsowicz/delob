@@ -100,8 +100,12 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	if err2 == nil {
 		t.Errorf("Should throw error.")
 	}
+
+	result3, _ := p.Execute("traceId", "SELECT Players;")
+
 	snaps.MatchSnapshot(t, result1)
 	snaps.MatchSnapshot(t, result2)
+	snaps.MatchSnapshot(t, result3)
 }
 
 func Test_IfCannotUpdateWhenIdDoesnNotExists_Case1(t *testing.T) {

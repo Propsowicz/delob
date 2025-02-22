@@ -28,6 +28,10 @@ type Record struct {
 	MatchRef          *Match
 }
 
+func (r *Record) IsTransactionStatusSuccessful() bool {
+	return r.transactionStatus == success
+}
+
 func (page *Page) isPageFull() bool {
 	return page.Header.lastUsedIndex+1 == utils.PAGE_SIZE
 }
@@ -73,7 +77,7 @@ func newRecord(value int16, matchRef *Match, transaction *Transaction) *Record {
 		MatchRefKey:       matchRefKey,
 	}
 
-	transaction.AddPageRecordPointer(record)
+	transaction.AddRecordPointer(record)
 
 	return record
 }
@@ -90,7 +94,7 @@ func overrideEmptyRecord(r *Record, value int16, matchRef *Match, transaction *T
 	r.MatchRef = matchRef
 	r.MatchRefKey = matchRefKey
 
-	transaction.AddPageRecordPointer(r)
+	transaction.AddRecordPointer(r)
 	return r
 }
 
@@ -132,7 +136,9 @@ func (buffer *BufferManager) GetAllPages() ([]string, [][]Page, error) {
 	pagesCollectionResult := [][]Page{}
 
 	for i := range buffer.pageDictionary.pagesData {
-
+		if !isSuccess(buffer.pageDictionary.pagesData[i].transactionStatus) {
+			continue
+		}
 		entityIdsResult = append(entityIdsResult, buffer.pageDictionary.pagesData[i].entityId)
 		pages := []Page{}
 		for j := range buffer.pageDictionary.pagesData[i].pageAdresses {
