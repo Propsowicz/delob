@@ -100,11 +100,12 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 	if err2 == nil {
 		t.Errorf("Should throw error.")
 	}
-	if result2 != "1 row(s) affected" {
-		t.Errorf("Adding should affect 1 row.")
-	}
+
+	result3, _ := p.Execute("traceId", "SELECT Players;")
+
 	snaps.MatchSnapshot(t, result1)
 	snaps.MatchSnapshot(t, result2)
+	snaps.MatchSnapshot(t, result3)
 }
 
 func Test_IfCannotUpdateWhenIdDoesnNotExists_Case1(t *testing.T) {
@@ -265,12 +266,16 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	bufferManager, _ := buffer.NewBufferManager()
 	p := Processor{bufferManager: &bufferManager}
 
-	p.Execute("traceId", "ADD PLAYERS ('A', 'B', 'X');")
+	_, err := p.Execute("traceId", "ADD PLAYERS ('A', 'B', 'X');")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
 
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
-	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
 	p.Execute("traceId", "SET WIN FOR 'A' AND LOSE FOR 'X';")
+	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)

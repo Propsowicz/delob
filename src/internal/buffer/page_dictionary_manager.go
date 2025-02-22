@@ -2,32 +2,34 @@ package buffer
 
 import (
 	hasher "delob/internal/utils"
-	"errors"
+	"fmt"
 )
 
 type PageDictionary struct {
-	pagesData []PageData
+	pagesData []*PageData
 }
 
 type PageData struct {
-	hashedEntityId uint32
-	entityId       string
-	pageAdresses   []*Page
+	hashedEntityId    uint32
+	entityId          string
+	pageAdresses      []*Page
+	transactionStatus transactionStatus
 }
 
-func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) error {
+func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) (*PageData, error) {
 	hashedEntityId, err := hasher.Calculate(entityId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	newPageData := PageData{
-		hashedEntityId: hashedEntityId,
-		entityId:       entityId,
-		pageAdresses:   []*Page{pageAdress},
+		hashedEntityId:    hashedEntityId,
+		entityId:          entityId,
+		pageAdresses:      []*Page{pageAdress},
+		transactionStatus: inProgress,
 	}
-	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, newPageData)
-	return nil
+	buffer.pageDictionary.pagesData = append(buffer.pageDictionary.pagesData, &newPageData)
+	return buffer.pageDictionary.pagesData[len(buffer.pageDictionary.pagesData)-1], nil
 }
 
 func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress *Page) error {
@@ -46,7 +48,18 @@ func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress 
 	return nil
 }
 
-func (buffer *BufferManager) getPageAdresses(entityId string) ([]*Page, error) {
+type transactionStatusCondition func(transactionStatus transactionStatus) bool
+
+func isInProgressOrSuccess(transactionStatus transactionStatus) bool {
+	return transactionStatus == success || transactionStatus == inProgress
+}
+
+func isSuccess(transactionStatus transactionStatus) bool {
+	return transactionStatus == success
+}
+
+func (buffer *BufferManager) getPageAdresses(entityId string,
+	transactionStatusCondition transactionStatusCondition) ([]*Page, error) {
 	hashedEntityId, err := hasher.Calculate(entityId)
 	if err != nil {
 		return nil, err
@@ -54,8 +67,15 @@ func (buffer *BufferManager) getPageAdresses(entityId string) ([]*Page, error) {
 
 	for i := range buffer.pageDictionary.pagesData {
 		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
-			return buffer.pageDictionary.pagesData[i].pageAdresses, nil
+			if buffer.pageDictionary.pagesData[i].transactionStatus == failed {
+				continue
+			}
+
+			if transactionStatusCondition(buffer.pageDictionary.pagesData[i].transactionStatus) {
+				return buffer.pageDictionary.pagesData[i].pageAdresses, nil
+			}
+			return nil, fmt.Errorf("cannot find entity with given id: %s", entityId)
 		}
 	}
-	return nil, errors.New("cannot find entity with given id")
+	return nil, fmt.Errorf("cannot find entity with given id: %s", entityId)
 }

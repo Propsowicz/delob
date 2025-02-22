@@ -40,12 +40,14 @@ type addToLogs struct {
 }
 
 func (p *Processor) Initialize() error {
-	dataLogs, err := p.bufferManager.LoadFromLogsDictionary()
+	dataLogs, err := p.bufferManager.LoadFromDataLogsDictionary()
 	if err != nil {
 		return err
 	}
 
 	for i := range dataLogs {
+		transaction := buffer.NewTransaction()
+		transaction.Start()
 		parsedExpression, err := parser.ParseDataLogJson(dataLogs[i].ParsedExpressionType,
 			dataLogs[i].ParsedExpression)
 
@@ -53,10 +55,13 @@ func (p *Processor) Initialize() error {
 			return err
 		}
 
-		_, _, errOrder := p.handleOrders(parsedExpression)
-		if errOrder != nil {
+		_, _, errOrder := p.handleOrders(parsedExpression, &transaction)
+
+		if !transaction.EvaluateTransactionSuccess(errOrder) {
 			return errOrder
 		}
+
+		transaction.Finish()
 	}
 	return nil
 }
@@ -71,49 +76,39 @@ func (p *Processor) Execute(
 		return "", err
 	}
 
-	// transactionId -> create file that is going to collect transactions steps in case of reverting it
-	// steps:
-	// add to page-manager
-	// save to in-memory buffer
+	transaction := buffer.NewTransaction()
+	transaction.Start()
 
-	// should be smth different
-	// transactionId := time.Now().Nanosecond()
-	isTransactionSuccessful, transactionStepsTable := p.startTansaction()
-
-	result, isWriteOperation, ordersError := p.handleOrders(parsedExpression)
-	if ordersError == nil {
-		isTransactionSuccessful = true
-	}
+	result, isWriteOperation, orderError := p.handleOrders(parsedExpression, &transaction)
 
 	return result, p.finishTransaction(
 		traceId,
 		parsedExpression,
 		isWriteOperation,
-		isTransactionSuccessful,
-		transactionStepsTable,
-		ordersError)
+		orderError,
+		&transaction)
 }
 
-func (p *Processor) handleOrders(orders parser.ParsedExpression) (string, bool, error) {
+func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, transaction *buffer.Transaction) (string, bool, error) {
 	var result string
 	var orderError error
 	var isWriteOperation bool = false
 
-	switch orders.GetType() {
+	switch parsedExpression.GetType() {
 	case parser.AddPlayersCommandType:
-		result, orderError = p.addPlayer(orders.(parser.AddPlayersCommand).Keys)
+		result, orderError = p.addPlayer(parsedExpression.(parser.AddPlayersCommand).Keys, transaction)
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
 	case parser.AddMatchCommandType:
-		result, orderError = p.updatePlayers(orders.(parser.AddMatchCommand))
+		result, orderError = p.updatePlayers(parsedExpression.(parser.AddMatchCommand), transaction)
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
 	case parser.SelectQueryType:
-		result, orderError = p.selectPlayers(orders.(parser.SelectQuery))
+		result, orderError = p.selectPlayers(parsedExpression.(parser.SelectQuery))
 		if orderError != nil {
 			return result, false, orderError
 		}
@@ -160,22 +155,22 @@ func sortComparer[T int16 | string](isAsc bool, leftOperand, rightOperand T) boo
 	return leftOperand > rightOperand
 }
 
-func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand) (string, error) {
+func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand, transaction *buffer.Transaction) (string, error) {
 	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(addMatchOrder.TeamOneKeys, addMatchOrder.TeamTwoKeys)
 	if err != nil {
 		return "", err
 	}
 	teamOneKeys, teamTwoKeys := dto.MapPlayerToKeysCollection(teamOnePlayers), dto.MapPlayerToKeysCollection(teamTwoPlayers)
 
-	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(addMatchOrder.MatchResult))
+	match := p.bufferManager.AddMatchEvent(teamOneKeys, teamTwoKeys, int8(addMatchOrder.MatchResult), transaction)
 
 	calc := elo.NewCalculator(teamOnePlayers, teamTwoPlayers, addMatchOrder.MatchResult)
 
-	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(teamOneKeys, calc.TeamOneEloLambda(), match)
+	errTeamOneUpdate := p.bufferManager.UpdatePlayersElo(teamOneKeys, calc.TeamOneEloLambda(), match, transaction)
 	if errTeamOneUpdate != nil {
 		return "", errTeamOneUpdate
 	}
-	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(teamTwoKeys, calc.TeamTwoEloLambda(), match)
+	errTeamTwoUpdate := p.bufferManager.UpdatePlayersElo(teamTwoKeys, calc.TeamTwoEloLambda(), match, transaction)
 	if errTeamTwoUpdate != nil {
 		return "", errTeamTwoUpdate
 	}
@@ -212,13 +207,13 @@ func (p *Processor) getPlayerByKey(entityId string) (dto.Player, error) {
 	return dto.NewPlayer(entityId, pages), nil
 }
 
-func (p *Processor) addPlayer(order []string) (string, error) {
+func (p *Processor) addPlayer(order []string, transaction *buffer.Transaction) (string, error) {
 	var numberOfAddedPlayers int16
 	var isFullySuccessful bool = true
 	var invalidEntityIds []string
 
 	for i := range order {
-		err := p.bufferManager.AddPlayer(order[i], elo.INITIAL_ELO, nil)
+		err := p.bufferManager.AddPlayer(order[i], elo.INITIAL_ELO, nil, transaction)
 		if err != nil {
 			isFullySuccessful = false
 			invalidEntityIds = append(invalidEntityIds, order[i])
@@ -228,48 +223,35 @@ func (p *Processor) addPlayer(order []string) (string, error) {
 	}
 
 	if !isFullySuccessful {
-		return affectNumberOfRowsMessage(numberOfAddedPlayers),
-			fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidEntityIds, " | "))
+		return "", fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidEntityIds, " | "))
 	}
-
 	return affectNumberOfRowsMessage(numberOfAddedPlayers), nil
-}
-
-func (p *Processor) startTansaction() (bool, *transactionSteps) {
-	return false, &transactionSteps{}
 }
 
 func (p *Processor) finishTransaction(
 	traceId string,
 	parsedExpression parser.ParsedExpression,
 	isWriteOperation bool,
-	isTransactionSuccessful bool,
-	transactionStepsTable *transactionSteps,
-	errorFromOrder error) error {
+	orderError error,
+	transaction *buffer.Transaction) error {
+	isOperationSuccessful := transaction.EvaluateTransactionSuccess(orderError)
 
 	json, err := parsedExpression.ToJson()
 	if err != nil {
 		return err
 	}
 
-	if isWriteOperation {
-		errWriteToLogsDict := p.bufferManager.AppendToLogsDictionary(traceId, parsedExpression.GetStringType(), json)
+	if isWriteOperation && isOperationSuccessful {
+		errWriteToLogsDict := p.bufferManager.AppendToDataLogsDictionary(traceId, parsedExpression.GetStringType(), json)
 		if errWriteToLogsDict != nil {
 			return errWriteToLogsDict
 		}
 	}
+	transaction.Finish()
 
-	if !isTransactionSuccessful {
-		revertChanges(1)
-
-		return errorFromOrder
+	if !isOperationSuccessful {
+		return orderError
 	}
-
-	return nil
-}
-
-func revertChanges(transactionId int) error {
-	// in terms of error the records should be marked - isDirty and deleted?
 	return nil
 }
 

@@ -12,7 +12,7 @@
 ---
 
 [Test_IfCannotAddTheSamePlayerTwicePlayer - 2]
-1 row(s) affected
+
 ---
 
 [Test_IfCanSelectAllWhenThereIsOnePlayer - 1]
@@ -29,4 +29,8 @@
 
 [Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult - 1]
 [{"Key":"Joe","Elo":1305},{"Key":"Tom","Elo":1295}]
+---
+
+[Test_IfCannotAddTheSamePlayerTwicePlayer - 3]
+[{"Key":"Tom","Elo":1300}]
 ---

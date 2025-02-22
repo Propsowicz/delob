@@ -15,6 +15,10 @@ func NewPlayer(key string, pages []buffer.Page) Player {
 
 	for i := 0; i < len(pages); i++ {
 		for j := 0; j < len(pages[i].Body); j++ {
+			if !pages[i].Body[j].IsTransactionStatusSuccessful() {
+				continue
+			}
+
 			records = append(
 				records,
 				pages[i].Body[j].Value,
