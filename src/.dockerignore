@@ -1,0 +1,23 @@
+# Ignore the build output
+/myapp
+
+# Ignore vendor dependencies (if using Go modules)
+/vendor
+
+# Ignore test files
+*_test.go
+
+# Ignore Go test binaries and cache
+*.test
+*.out
+/tmp
+*.log
+
+# Ignore VCS and editor files
+.git
+.gitignore
+*.swp
+*.swo
+.idea/
+.vscode/
+.DS_Store

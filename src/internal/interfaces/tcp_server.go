@@ -6,6 +6,7 @@ import (
 	"delob/internal/utils/logger"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -22,7 +23,12 @@ type TcpServer struct {
 type requestHandler func(string, string) (string, error)
 
 func NewTcpServer(port int) TcpServer {
-	serverAddress := "127.0.0.1:" + strconv.Itoa(port)
+	buildEnv := os.Getenv("BUILD_ENV")
+	hostAdress := "127.0.0.1"
+	if buildEnv == "docker" {
+		hostAdress = "0.0.0.0"
+	}
+	serverAddress := fmt.Sprintf("%s:%s", hostAdress, strconv.Itoa(port))
 
 	return TcpServer{
 		port:            port,
@@ -38,7 +44,7 @@ func (s *TcpServer) Start(requestHandler requestHandler) {
 		return
 	}
 
-	logger.Info("", "Started listening for tcp connections on: %s"+s.serverAddress)
+	logger.Info("", "Started listening for tcp connections on: "+s.serverAddress)
 
 	defer l.Close()
 	for {
