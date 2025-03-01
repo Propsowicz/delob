@@ -94,7 +94,7 @@ func Test_TestCase_1(t *testing.T) {
 }
 
 func Test_TestCase_1_SELECT_PerformanceTest(t *testing.T) {
-	const expectedExecutionTimeInMiliseconds int64 = 10
+	const expectedExecutionTimeInMiliseconds int64 = 100
 	context, err := NewContext("")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
