@@ -71,7 +71,7 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 			return
 		}
 
-		rawExpression := strings.TrimSuffix(bufferData, "\r\n")
+		rawExpression := strings.TrimSpace(strings.TrimSuffix(bufferData, "\r\n"))
 
 		result, err := requestHandler(traceId, rawExpression)
 
