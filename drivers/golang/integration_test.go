@@ -58,8 +58,29 @@ func executeTestCase(context *DelobContext, record TestRecord) error {
 	return nil
 }
 
+func FuzzTest_TestInvalidConnectionStrings(f *testing.F) {
+	testCases := []string{
+		"",
+		"1",
+		"Uid=myUsername;Pwd=myPassword;",
+		"Server=localhost;Pwd=myPassword;",
+		"Server=localhost;Uid=myUsername",
+	}
+
+	for _, testCase := range testCases {
+		f.Add(testCase)
+	}
+
+	f.Fuzz(func(t *testing.T, connectionString string) {
+		_, err := NewContext(connectionString)
+		if err == nil {
+			t.Errorf("Should throw error that connection string is invalid")
+		}
+	})
+}
+
 func Test_TestCase_1(t *testing.T) {
-	context, err := NewContext("")
+	context, err := NewContext("Server=localhost;Port=5678;Uid=myUsername;Pwd=myPassword;")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
 	}
@@ -95,7 +116,7 @@ func Test_TestCase_1(t *testing.T) {
 
 func Test_TestCase_1_SELECT_PerformanceTest(t *testing.T) {
 	const expectedExecutionTimeInMiliseconds int64 = 100
-	context, err := NewContext("")
+	context, err := NewContext("Server=localhost;Uid=myUsername;Pwd=myPassword;")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
 	}
