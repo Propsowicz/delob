@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	connectionString := "TODO!"
+	connectionString := "Server=localhost;Port=5678;Uid=myUsername;Pwd=myPassword;"
 	context, err := NewContext(connectionString)
 	if err != nil {
 		fmt.Println(err.Error())
