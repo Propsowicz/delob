@@ -5,9 +5,11 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	driver "github.com/Propsowicz/delob-driver"
 )
 
-func assertCorrectKeyOrder(t *testing.T, player Player, expectedKey string) {
+func assertCorrectKeyOrder(t *testing.T, player driver.Player, expectedKey string) {
 	if player.Key != expectedKey {
 		t.Errorf("wrong order: expected %s, got %s", expectedKey, player.Key)
 	}
@@ -33,7 +35,7 @@ func loadTestCase(fileName string) TestCase {
 	return result
 }
 
-func executeTestCase(context *DelobContext, record TestRecord) error {
+func executeTestCase(context *driver.DelobContext, record TestRecord) error {
 	if record.Type == "addPlayer" {
 		return context.AddPlayer(record.Arguments[0])
 	}
@@ -72,7 +74,7 @@ func FuzzTest_TestInvalidConnectionStrings(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, connectionString string) {
-		_, err := NewContext(connectionString)
+		_, err := driver.NewContext(connectionString)
 		if err == nil {
 			t.Errorf("Should throw error that connection string is invalid")
 		}
@@ -80,7 +82,7 @@ func FuzzTest_TestInvalidConnectionStrings(f *testing.F) {
 }
 
 func Test_TestCase_1(t *testing.T) {
-	context, err := NewContext("Server=localhost;Port=5678;Uid=myUsername;Pwd=myPassword;")
+	context, err := driver.NewContext("Server=localhost;Port=5678;Uid=myUsername;Pwd=myPassword;")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
 	}
@@ -95,7 +97,7 @@ func Test_TestCase_1(t *testing.T) {
 		}
 	}
 
-	result, errResult := context.GetPlayersOrderBy(Elo, Descending)
+	result, errResult := context.GetPlayersOrderBy(driver.Elo, driver.Descending)
 	if errResult != nil {
 		t.Errorf("Should be able to create delob context")
 	}
@@ -116,14 +118,14 @@ func Test_TestCase_1(t *testing.T) {
 
 func Test_TestCase_1_SELECT_PerformanceTest(t *testing.T) {
 	const expectedExecutionTimeInMiliseconds int64 = 100
-	context, err := NewContext("Server=localhost;Uid=myUsername;Pwd=myPassword;")
+	context, err := driver.NewContext("Server=localhost;Uid=myUsername;Pwd=myPassword;")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
 	}
 
 	start := time.Now()
 
-	_, errResult := context.GetPlayersOrderBy(Elo, Descending)
+	_, errResult := context.GetPlayersOrderBy(driver.Elo, driver.Descending)
 	elapsed := time.Since(start).Milliseconds()
 
 	if errResult != nil {
