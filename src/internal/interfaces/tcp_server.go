@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"bufio"
+	"delob/internal/auth"
 	"delob/internal/utils"
 	"delob/internal/utils/logger"
 	"fmt"
@@ -18,6 +19,7 @@ type TcpServer struct {
 	port            int
 	serverAddress   string
 	protocolVersion string
+	authManager     auth.AuthenticationManager
 }
 
 type requestHandler func(string, string) (string, error)
@@ -34,6 +36,7 @@ func NewTcpServer(port int) TcpServer {
 		port:            port,
 		serverAddress:   serverAddress,
 		protocolVersion: "00", // TODO
+		authManager:     auth.NewAuthenticationManager(),
 	}
 }
 
@@ -58,6 +61,11 @@ func (s *TcpServer) Start(requestHandler requestHandler) {
 }
 
 func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) {
+
+	// auth
+
+	// s.authManager.TryAuthenticate("qwe", "12")
+
 	defer c.Close()
 	logger.Info("", fmt.Sprintf("Serving %s", c.RemoteAddr().String()))
 
@@ -65,28 +73,55 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 		traceId := utils.GenerateKey()
 		reader := bufio.NewReader(c)
 		writer := bufio.NewWriter(c)
-		bufferData, err := reader.ReadString('\n')
+		readString, err := reader.ReadString('\n')
 		if err != nil {
 			logger.Error(traceId, err)
 			return
 		}
 
-		rawExpression := strings.TrimSpace(strings.TrimSuffix(bufferData, "\r\n"))
+		rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
+		request, errReqParse := parseRequest(rawRequest, c.RemoteAddr().String())
+		if errReqParse != nil {
+			return
+		}
 
-		result, err := requestHandler(traceId, rawExpression)
+		if s.authManager.TryAuthenticate(request.user, request.ip) {
 
-		if err != nil {
-			s.writeString(*writer, false, traceId, err.Error())
-			logger.Error(traceId, err)
+			result, err := requestHandler(traceId, request.msg)
+			if err != nil {
+				s.writeString(*writer, s.newResponse(fail, err.Error()), traceId)
+				logger.Error(traceId, err)
+			} else {
+				s.writeString(*writer, s.newResponse(success, result), traceId)
+				logger.Info(traceId, result)
+			}
 		} else {
-			s.writeString(*writer, true, traceId, result)
-			logger.Info(traceId, result)
+			s.writeString(*writer, s.newResponse(authChallenge, ""), traceId)
+			logger.Info(traceId, "auth challenge started")
+
+			readString, err := reader.ReadString('\n')
+			if err != nil {
+				logger.Error(traceId, err)
+				return
+			}
+
+			rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
+			request, errReqParse := parseRequest(rawRequest, c.RemoteAddr().String())
+			if errReqParse != nil {
+				return
+			}
+
+			fmt.Println("new request")
+			fmt.Println(request)
+
+			s.writeString(*writer, s.newResponse(authChallenge, "some data"), traceId)
+
 		}
 	}
 }
 
-func (s *TcpServer) writeString(writer bufio.Writer, isResponseSuccessfull bool, traceId, response string) {
-	if _, err := writer.WriteString(s.formatResponse(isResponseSuccessfull, response)); err != nil {
+func (s *TcpServer) writeString(writer bufio.Writer, response, traceId string) {
+	if _, err := writer.WriteString(response); err != nil {
 		logger.Error(traceId, err)
 	}
 	if err := writer.Flush(); err != nil {
@@ -94,11 +129,33 @@ func (s *TcpServer) writeString(writer bufio.Writer, isResponseSuccessfull bool,
 	}
 }
 
-func (s *TcpServer) formatResponse(isResponseSuccessfull bool, response string) string {
-	responseStatus := "0"
-	if isResponseSuccessfull {
-		responseStatus = "1"
-	}
+type request struct {
+	user string
+	msg  string
+	ip   string
+}
 
-	return fmt.Sprintf("%s%s%s\n", s.protocolVersion, responseStatus, response)
+func parseRequest(s, ip string) (request, error) {
+	// user=<>,msg=<>
+
+	parts := strings.Split(s, "|||")
+
+	// for now I use this separator |||
+	r := request{}
+	r.user = parts[0]
+	r.msg = parts[1]
+	r.ip = ip
+	return r, nil
+}
+
+type status int8
+
+const (
+	fail          status = 0
+	success       status = 1
+	authChallenge status = 9
+)
+
+func (s *TcpServer) newResponse(status status, msg string) string {
+	return fmt.Sprintf("%s%d%s\n", s.protocolVersion, status, msg)
 }

@@ -25,9 +25,10 @@ func main() {
 	// OK 2. refactor tokenizer -> token scan -> parser
 	// OK 3. add tcp
 	// 4. add SCRAM (user, credentials, store, handshake, session store)
-	// 5. add pipeline
-	// 6. dockerize
+	// OK 5. add pipeline
+	// OK 6. dockerizecd
 	// 7. backup
+	// 8. move tests to higher level
 	// FIX: order by elo asc; works but should throw since it needs to be Elo not elo
 	// FIX: parse -> should not be able to use key more than once
 
