@@ -60,12 +60,17 @@ func (s *TcpServer) Start(requestHandler requestHandler) {
 	}
 }
 
+func (s *TcpServer) getRequest(reader bufio.Reader, ip string) (request, error) {
+	readString, err := reader.ReadString('\n')
+	if err != nil {
+		return request{}, err
+	}
+
+	rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
+	return parseRequest(rawRequest, ip)
+}
+
 func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) {
-
-	// auth
-
-	// s.authManager.TryAuthenticate("qwe", "12")
-
 	defer c.Close()
 	logger.Info("", fmt.Sprintf("Serving %s", c.RemoteAddr().String()))
 
@@ -73,15 +78,10 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 		traceId := utils.GenerateKey()
 		reader := bufio.NewReader(c)
 		writer := bufio.NewWriter(c)
-		readString, err := reader.ReadString('\n')
-		if err != nil {
-			logger.Error(traceId, err)
-			return
-		}
 
-		rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
-		request, errReqParse := parseRequest(rawRequest, c.RemoteAddr().String())
+		request, errReqParse := s.getRequest(*reader, c.RemoteAddr().String())
 		if errReqParse != nil {
+			logger.Error(traceId, errReqParse)
 			return
 		}
 
@@ -96,25 +96,34 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 				logger.Info(traceId, result)
 			}
 		} else {
-			s.writeString(*writer, s.newResponse(authChallenge, ""), traceId)
-			logger.Info(traceId, "auth challenge started")
-
-			readString, err := reader.ReadString('\n')
-			if err != nil {
-				logger.Error(traceId, err)
+			clientFirstMessage, errClientFirst := s.getClientFirstMessage(c, *writer, *reader, traceId)
+			if errClientFirst != nil {
+				logger.Error(traceId, errClientFirst)
 				return
 			}
 
-			rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
-			request, errReqParse := parseRequest(rawRequest, c.RemoteAddr().String())
-			if errReqParse != nil {
+			auth, errAddClientFirst := s.authManager.AddClientFirstAuthString(clientFirstMessage.msg)
+			if errAddClientFirst != nil {
+				logger.Error(traceId, errAddClientFirst)
 				return
 			}
 
-			fmt.Println("new request")
-			fmt.Println(request)
+			auth, errAddClientFirstMsg := s.addServerFirstAuthString(auth, clientFirstMessage.user)
+			if errAddClientFirstMsg != nil {
+				logger.Error(traceId, errAddClientFirstMsg)
+				return
+			}
 
-			s.writeString(*writer, s.newResponse(authChallenge, "some data"), traceId)
+			clientFinalMessage, errClientFinal := s.getClientFinalMessage(c, *writer, *reader, traceId, auth)
+			if errClientFinal != nil {
+				logger.Error(traceId, errClientFinal)
+				return
+			}
+
+			fmt.Printf(clientFinalMessage.user)
+			fmt.Printf(clientFinalMessage.msg)
+
+			// s.writeString(*writer, s.newResponse(authChallenge, "some data"), traceId)
 
 		}
 	}
@@ -127,6 +136,26 @@ func (s *TcpServer) writeString(writer bufio.Writer, response, traceId string) {
 	if err := writer.Flush(); err != nil {
 		logger.Error(traceId, err)
 	}
+}
+
+func (s *TcpServer) getClientFirstMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId string) (request, error) {
+	s.writeString(writer, s.newResponse(authChallenge, ""), traceId)
+
+	return s.getRequest(reader, c.RemoteAddr().String())
+}
+
+func (s *TcpServer) addServerFirstAuthString(auth, user string) (string, error) {
+	auth, errServerFirst := s.authManager.AddServerFirstMessage(auth, user)
+	if errServerFirst != nil {
+		return "", errServerFirst
+	}
+	return auth, nil
+}
+
+func (s *TcpServer) getClientFinalMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId, auth string) (request, error) {
+	s.writeString(writer, s.newResponse(authChallenge, auth), traceId)
+
+	return s.getRequest(reader, c.RemoteAddr().String())
 }
 
 type request struct {
