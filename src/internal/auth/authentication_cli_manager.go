@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 )
@@ -28,21 +27,28 @@ func AddUser(user, password string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(userData)
 
 	*userData = append(*userData, createNewUser(user, password))
 
-	fmt.Println(userData)
 	errWrite := WriteMetaData(userData)
 	if errWrite != nil {
 		return errWrite
 	}
-
 	return nil
 }
 
-func loadUserData(user string) userData {
-	return createNewUser("myUsername", "myPassword")
+func LoadUserData(user string) (userData, error) {
+	users, err := ReadMetaData()
+	if err != nil {
+		return userData{}, err
+	}
+
+	for i := range *users {
+		if (*users)[i].User == user {
+			return (*users)[i], nil
+		}
+	}
+	return userData{}, fmt.Errorf("cannot find a user with given name: %s", user)
 }
 
 func createNewUser(user, password string) userData {
@@ -80,17 +86,18 @@ func ReadMetaData() (*[]userData, error) {
 	if errors.Is(err, os.ErrNotExist) {
 		return &result, nil
 	}
+	defer f.Close()
+
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("", err)
 		return nil, err
 	}
 
 	decoder := gob.NewDecoder(f)
 	if err := decoder.Decode(&result); err != nil {
-		fmt.Println("Error decoding data:", err)
+		logger.Error("", err)
 		return &result, err
 	}
-
 	return &result, nil
 }
 
@@ -100,34 +107,27 @@ func WriteMetaData(headers *[]userData) error {
 
 	f, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("", err)
 		return err
 	}
 
 	defer func() {
-		fmt.Println("????")
 		f.Close()
-		fmt.Println("!!")
-		fmt.Println(err)
 		if err != nil {
-			errr := os.Remove(tempPath)
-			fmt.Println(errr)
+			os.Remove(tempPath)
 		}
 	}()
 
-	// jsonData, err := json.Marshal(headers)
-	// if err != nil {
-	// 	return err
-	// }
 	encoder := gob.NewEncoder(f)
 	if err := encoder.Encode(headers); err != nil {
-		fmt.Println("Error encoding data:", err)
+		logger.Error("", err)
 	}
 
 	if err = f.Sync(); err != nil {
-		log.Fatal(err)
+		logger.Error("", err)
 		return err
 	}
-	return nil
+
+	f.Close()
 	return os.Rename(tempPath, path)
 }

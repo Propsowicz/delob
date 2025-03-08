@@ -61,7 +61,10 @@ func (a *AuthenticationManager) TryAuthenticate(user, ip string) bool {
 }
 
 func (a *AuthenticationManager) AddServerFirstMessage(auth, user string) (string, error) {
-	userData := loadUserData(user)
+	userData, err := LoadUserData(user)
+	if err != nil {
+		return "", err
+	}
 
 	auth = addToAuth(auth, fmt.Sprintf("s_nonce=%d,", generateNonce()))
 	auth = addToAuth(auth, fmt.Sprintf("salt=%s,", hex.EncodeToString(userData.Salt)))
@@ -79,7 +82,10 @@ func (a *AuthenticationManager) ParseClientFirstMessageToAuthString(message stri
 }
 
 func (a *AuthenticationManager) Verify(proof, user, auth string) bool {
-	userData := loadUserData(user)
+	userData, err := LoadUserData(user)
+	if err != nil {
+		return false
+	}
 	clientSignature := computeHmacHash(userData.Stored_key, []byte(auth))
 
 	serverSideProof := hex.EncodeToString(xorBytes(userData.Client_key, clientSignature))

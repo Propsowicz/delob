@@ -104,6 +104,7 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 
 			auth, errServerFirstAuth := s.prepareServerFirstMessage(auth, user)
 			if errServerFirstAuth != nil {
+				s.writeString(*writer, s.newResponse(fail, errServerFirstAuth.Error()), traceId)
 				return
 			}
 
@@ -115,13 +116,10 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 
 			verifyProofResult := s.verifyProof(proofRequest.msg, user, auth)
 
-			s.sendVerifierResult(c, *writer, *reader, traceId, verifyProofResult)
+			fmt.Println("proofRequest:")
+			fmt.Println(proofRequest)
 
-			fmt.Println(proofRequest.msg)
-			fmt.Println(verifyProofResult)
-
-			// s.writeString(*writer, s.newResponse(authChallenge, "some data"), traceId)
-
+			s.sendVerifierResult(*writer, traceId, verifyProofResult)
 		}
 	}
 }
@@ -139,8 +137,9 @@ func (s *TcpServer) verifyProof(proof, user, auth string) bool {
 	return s.authManager.Verify(proof, user, auth)
 }
 
-func (s *TcpServer) sendVerifierResult(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId string, proofIsCorrect bool) {
+func (s *TcpServer) sendVerifierResult(writer bufio.Writer, traceId string, proofIsCorrect bool) {
 	if proofIsCorrect {
+		// TODO
 		// save to session
 		s.writeString(writer, s.newResponse(proofVerified, ""), traceId)
 	} else {

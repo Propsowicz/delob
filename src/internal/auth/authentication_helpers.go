@@ -35,7 +35,6 @@ func addToAuth(auth string, s interface{}) string {
 
 func parseClientFirst(s string) (string, int, error) {
 	parts := strings.Split(s, ",")
-	fmt.Println(s)
 	const userPrefix string = "user="
 	const cnoncePrefix string = "c_nonce="
 	if parts[0][0:len(userPrefix)] == userPrefix && parts[1][0:len(cnoncePrefix)] == cnoncePrefix {

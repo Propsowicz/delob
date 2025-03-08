@@ -8,15 +8,13 @@ import (
 )
 
 func main() {
-	// Define the flag. When --add-user is provided, it will be true.
 	addUser := flag.Bool("add-user", false, "Add a new user. Provide username and password as positional arguments.")
+	loadUser := flag.Bool("load-user", false, "Load user. Provide username as an argument.")
 
-	// Parse command-line flags
 	flag.Parse()
 
-	// If the --add-user flag is set, expect two additional arguments: username and password.
 	if *addUser {
-		args := flag.Args() // returns the positional arguments that are not flags
+		args := flag.Args()
 		if len(args) < 2 {
 			fmt.Println("Usage: --add-user <username> <password>")
 			os.Exit(1)
@@ -30,7 +28,22 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Adding user: %s with password: %s\n", username, password)
+		fmt.Printf("Adding user: %s\n", username)
+	} else if *loadUser {
+		args := flag.Args()
+		if len(args) != 1 {
+			fmt.Println("Usage: --load-user <username>")
+			os.Exit(1)
+		}
+		username := args[0]
+
+		user, err := auth.LoadUserData(username)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Printf("Loaded user: %s\n", user.User)
 	} else {
 		fmt.Println("No action specified. Use --add-user flag to add a user.")
 	}
