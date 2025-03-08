@@ -1,6 +1,8 @@
 module delob
 
-go 1.22.4
+go 1.23.0
+
+toolchain go1.23.7
 
 require github.com/gkampitakis/go-snaps v0.5.9
 
@@ -16,4 +18,5 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 )

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"delob/internal/auth"
 	"flag"
 	"fmt"
 	"os"
@@ -22,6 +23,13 @@ func main() {
 		}
 		username := args[0]
 		password := args[1]
+
+		err := auth.AddUser(username, password)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 		fmt.Printf("Adding user: %s with password: %s\n", username, password)
 	} else {
 		fmt.Println("No action specified. Use --add-user flag to add a user.")

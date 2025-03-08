@@ -96,32 +96,29 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 				logger.Info(traceId, result)
 			}
 		} else {
-			clientFirstMessage, errClientFirst := s.getClientFirstMessage(c, *writer, *reader, traceId)
+			user, auth, errClientFirst := s.getClientFirstMessage(c, *writer, *reader, traceId)
 			if errClientFirst != nil {
 				logger.Error(traceId, errClientFirst)
 				return
 			}
 
-			auth, errAddClientFirst := s.authManager.AddClientFirstAuthString(clientFirstMessage.msg)
-			if errAddClientFirst != nil {
-				logger.Error(traceId, errAddClientFirst)
+			auth, errServerFirstAuth := s.prepareServerFirstMessage(auth, user)
+			if errServerFirstAuth != nil {
 				return
 			}
 
-			auth, errAddClientFirstMsg := s.addServerFirstAuthString(auth, clientFirstMessage.user)
-			if errAddClientFirstMsg != nil {
-				logger.Error(traceId, errAddClientFirstMsg)
+			proofRequest, errProofRequest := s.getProofMessage(c, *writer, *reader, traceId, auth)
+			if errProofRequest != nil {
+				logger.Error(traceId, errProofRequest)
 				return
 			}
 
-			clientFinalMessage, errClientFinal := s.getClientFinalMessage(c, *writer, *reader, traceId, auth)
-			if errClientFinal != nil {
-				logger.Error(traceId, errClientFinal)
-				return
-			}
+			verifyProofResult := s.verifyProof(proofRequest.msg, user, auth)
 
-			fmt.Printf(clientFinalMessage.user)
-			fmt.Printf(clientFinalMessage.msg)
+			s.sendVerifierResult(c, *writer, *reader, traceId, verifyProofResult)
+
+			fmt.Println(proofRequest.msg)
+			fmt.Println(verifyProofResult)
 
 			// s.writeString(*writer, s.newResponse(authChallenge, "some data"), traceId)
 
@@ -138,13 +135,35 @@ func (s *TcpServer) writeString(writer bufio.Writer, response, traceId string) {
 	}
 }
 
-func (s *TcpServer) getClientFirstMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId string) (request, error) {
-	s.writeString(writer, s.newResponse(authChallenge, ""), traceId)
-
-	return s.getRequest(reader, c.RemoteAddr().String())
+func (s *TcpServer) verifyProof(proof, user, auth string) bool {
+	return s.authManager.Verify(proof, user, auth)
 }
 
-func (s *TcpServer) addServerFirstAuthString(auth, user string) (string, error) {
+func (s *TcpServer) sendVerifierResult(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId string, proofIsCorrect bool) {
+	if proofIsCorrect {
+		// save to session
+		s.writeString(writer, s.newResponse(proofVerified, ""), traceId)
+	} else {
+		s.writeString(writer, s.newResponse(proofNotVerified, ""), traceId)
+	}
+}
+
+func (s *TcpServer) getClientFirstMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId string) (string, string, error) {
+	s.writeString(writer, s.newResponse(authChallenge, ""), traceId)
+
+	clientFirstMessage, errClientFirst := s.getRequest(reader, c.RemoteAddr().String())
+	if errClientFirst != nil {
+		return "", "", errClientFirst
+	}
+
+	auth, errParseClientFirst := s.authManager.ParseClientFirstMessageToAuthString(clientFirstMessage.msg)
+	if errParseClientFirst != nil {
+		return "", "", errParseClientFirst
+	}
+	return clientFirstMessage.user, auth, nil
+}
+
+func (s *TcpServer) prepareServerFirstMessage(auth, user string) (string, error) {
 	auth, errServerFirst := s.authManager.AddServerFirstMessage(auth, user)
 	if errServerFirst != nil {
 		return "", errServerFirst
@@ -152,7 +171,7 @@ func (s *TcpServer) addServerFirstAuthString(auth, user string) (string, error) 
 	return auth, nil
 }
 
-func (s *TcpServer) getClientFinalMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId, auth string) (request, error) {
+func (s *TcpServer) getProofMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId, auth string) (request, error) {
 	s.writeString(writer, s.newResponse(authChallenge, auth), traceId)
 
 	return s.getRequest(reader, c.RemoteAddr().String())
@@ -180,9 +199,11 @@ func parseRequest(s, ip string) (request, error) {
 type status int8
 
 const (
-	fail          status = 0
-	success       status = 1
-	authChallenge status = 9
+	fail             status = 0
+	success          status = 1
+	proofVerified    status = 7
+	proofNotVerified status = 8
+	authChallenge    status = 9
 )
 
 func (s *TcpServer) newResponse(status status, msg string) string {
