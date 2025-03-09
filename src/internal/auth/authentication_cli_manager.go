@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,12 @@ func AddUser(user, password string) error {
 		return err
 	}
 
-	*userData = append(*userData, createNewUser(user, password))
+	newUser, err := createNewUser(user, password)
+	if err != nil {
+		return err
+	}
+
+	*userData = append(*userData, newUser)
 
 	errWrite := WriteMetaData(userData)
 	if errWrite != nil {
@@ -51,7 +57,15 @@ func LoadUserData(user string) (userData, error) {
 	return userData{}, fmt.Errorf("cannot find a user with given name: %s", user)
 }
 
-func createNewUser(user, password string) userData {
+func createNewUser(user, password string) (userData, error) {
+	if strings.Contains(user, ",") {
+		return userData{}, fmt.Errorf("cannot create a user with comma separator in username - ,")
+	}
+	const passwrodLengthMinimum int8 = 6
+	if len(password) < int(passwrodLengthMinimum) {
+		return userData{}, fmt.Errorf("password is too short - should contain at least %d characters.", passwrodLengthMinimum)
+	}
+
 	u := userData{
 		User: user,
 	}
@@ -61,13 +75,13 @@ func createNewUser(user, password string) userData {
 	u.Client_key = computeHmacHash(u.Hashed_pwd, []byte(clientKeySalt))
 	u.Stored_key = computeSha256Hash(u.Client_key)
 
-	return u
+	return u, nil
 }
 
 func catalog() string {
 	var path string = ".auth"
 
-	err := os.MkdirAll(path, 0644)
+	err := os.MkdirAll(path, 0774)
 	if err != nil {
 		logger.Error("", err)
 	}
@@ -105,7 +119,7 @@ func WriteMetaData(headers *[]userData) error {
 	var path string = path()
 	tempPath := fmt.Sprintf("%s_temp.%d", path, time.Now().Unix())
 
-	f, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0774)
 	if err != nil {
 		logger.Error("", err)
 		return err

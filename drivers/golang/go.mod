@@ -1,5 +1,10 @@
 module delob/driver
 
-go 1.22.4
+go 1.23.0
 
-require github.com/Propsowicz/delob-driver v0.1.0 // indirect
+toolchain go1.23.7
+
+require (
+	github.com/Propsowicz/delob-driver v0.2.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+)

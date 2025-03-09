@@ -12,9 +12,6 @@ import (
 	"strings"
 )
 
-// protocol:
-// version, response status, msg
-
 type TcpServer struct {
 	port            int
 	serverAddress   string
@@ -60,20 +57,8 @@ func (s *TcpServer) Start(requestHandler requestHandler) {
 	}
 }
 
-func (s *TcpServer) getRequest(reader bufio.Reader, ip string) (request, error) {
-	readString, err := reader.ReadString('\n')
-	if err != nil {
-		return request{}, err
-	}
-
-	rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
-	return parseRequest(rawRequest, ip)
-}
-
 func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) {
 	defer c.Close()
-	logger.Info("", fmt.Sprintf("Serving %s", c.RemoteAddr().String()))
-
 	for {
 		traceId := utils.GenerateKey()
 		reader := bufio.NewReader(c)
@@ -85,8 +70,9 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 			return
 		}
 
-		if s.authManager.TryAuthenticate(request.user, request.ip) {
+		logger.Info(traceId, fmt.Sprintf("Request from user: %s and ip: %s", request.user, request.ip))
 
+		if s.authManager.IsUserAuthenticated(request.user, request.ip) {
 			result, err := requestHandler(traceId, request.msg)
 			if err != nil {
 				s.writeString(*writer, s.newResponse(fail, err.Error()), traceId)
@@ -114,10 +100,7 @@ func (s *TcpServer) handleConnection(c net.Conn, requestHandler requestHandler) 
 				return
 			}
 
-			verifyProofResult := s.verifyProof(proofRequest.msg, user, auth)
-
-			fmt.Println("proofRequest:")
-			fmt.Println(proofRequest)
+			verifyProofResult := s.verifyProof(proofRequest.msg, user, proofRequest.ip, auth)
 
 			s.sendVerifierResult(*writer, traceId, verifyProofResult)
 		}
@@ -133,14 +116,12 @@ func (s *TcpServer) writeString(writer bufio.Writer, response, traceId string) {
 	}
 }
 
-func (s *TcpServer) verifyProof(proof, user, auth string) bool {
-	return s.authManager.Verify(proof, user, auth)
+func (s *TcpServer) verifyProof(proof, user, ip, auth string) bool {
+	return s.authManager.Verify(proof, user, ip, auth)
 }
 
 func (s *TcpServer) sendVerifierResult(writer bufio.Writer, traceId string, proofIsCorrect bool) {
 	if proofIsCorrect {
-		// TODO
-		// save to session
 		s.writeString(writer, s.newResponse(proofVerified, ""), traceId)
 	} else {
 		s.writeString(writer, s.newResponse(proofNotVerified, ""), traceId)
@@ -155,10 +136,15 @@ func (s *TcpServer) getClientFirstMessage(c net.Conn, writer bufio.Writer, reade
 		return "", "", errClientFirst
 	}
 
-	auth, errParseClientFirst := s.authManager.ParseClientFirstMessageToAuthString(clientFirstMessage.msg)
+	user, _, auth, errParseClientFirst := s.authManager.ParseClientFirstMessageToAuthString(clientFirstMessage.msg)
 	if errParseClientFirst != nil {
 		return "", "", errParseClientFirst
 	}
+
+	if user != clientFirstMessage.user {
+		return "", "", fmt.Errorf("user from request and auth string does not match")
+	}
+
 	return clientFirstMessage.user, auth, nil
 }
 
@@ -175,36 +161,12 @@ func (s *TcpServer) getProofMessage(c net.Conn, writer bufio.Writer, reader bufi
 
 	return s.getRequest(reader, c.RemoteAddr().String())
 }
+func (s *TcpServer) getRequest(reader bufio.Reader, ip string) (request, error) {
+	readString, err := reader.ReadString('\n')
+	if err != nil {
+		return request{}, err
+	}
 
-type request struct {
-	user string
-	msg  string
-	ip   string
-}
-
-func parseRequest(s, ip string) (request, error) {
-	// user=<>,msg=<>
-
-	parts := strings.Split(s, "|||")
-
-	// for now I use this separator |||
-	r := request{}
-	r.user = parts[0]
-	r.msg = parts[1]
-	r.ip = ip
-	return r, nil
-}
-
-type status int8
-
-const (
-	fail             status = 0
-	success          status = 1
-	proofVerified    status = 7
-	proofNotVerified status = 8
-	authChallenge    status = 9
-)
-
-func (s *TcpServer) newResponse(status status, msg string) string {
-	return fmt.Sprintf("%s%d%s\n", s.protocolVersion, status, msg)
+	rawRequest := strings.TrimSpace(strings.TrimSuffix(readString, "\r\n"))
+	return parseRequest(rawRequest, ip)
 }

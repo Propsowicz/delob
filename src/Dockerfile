@@ -1,5 +1,5 @@
 # build delob main app 
-FROM golang:1.22.4-bullseye AS builder
+FROM golang:1.23-bullseye AS builder
 
 WORKDIR /app
 

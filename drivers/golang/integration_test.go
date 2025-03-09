@@ -81,8 +81,28 @@ func FuzzTest_TestInvalidConnectionStrings(f *testing.F) {
 	})
 }
 
+func FuzzTest_TestInvalidUserCredentials(f *testing.F) {
+	testCases := []string{
+		"Server=localhost;Port=5678;Uid=invalidUser;Pwd=pa$$word;",
+		"Server=localhost;Port=5678;Uid=myUser;Pwd=invalidPassword;",
+	}
+
+	for _, testCase := range testCases {
+		f.Add(testCase)
+	}
+
+	f.Fuzz(func(t *testing.T, connectionString string) {
+		context, err := driver.NewContext(connectionString)
+
+		_, err = context.GetPlayers()
+		if err == nil {
+			t.Errorf("Should not be able to connect to the database.")
+		}
+	})
+}
+
 func Test_TestCase_1(t *testing.T) {
-	context, err := driver.NewContext("Server=localhost;Port=5678;Uid=myUsername;Pwd=myPassword;")
+	context, err := driver.NewContext("Server=localhost;Port=5678;Uid=myUser;Pwd=pa$$word;")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
 	}
@@ -118,7 +138,7 @@ func Test_TestCase_1(t *testing.T) {
 
 func Test_TestCase_1_SELECT_PerformanceTest(t *testing.T) {
 	const expectedExecutionTimeInMiliseconds int64 = 100
-	context, err := driver.NewContext("Server=localhost;Uid=myUsername;Pwd=myPassword;")
+	context, err := driver.NewContext("Server=localhost;Uid=myUser;Pwd=pa$$word;")
 	if err != nil {
 		t.Errorf("Should be able to create delob context")
 	}

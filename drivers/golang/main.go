@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	driver "delob/driver/delobdriver"
+	driver "github.com/Propsowicz/delob-driver"
 )
 
 func main() {
@@ -13,17 +13,17 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
-	// if err := context.AddPlayers([]string{"Joe", "Mark", "Jim", "Dave"}); err != nil {
-	// 	fmt.Println(err)
-	// }
+	if err := context.AddPlayers([]string{"Joe", "Mark", "Jim", "Dave"}); err != nil {
+		fmt.Println(err)
+	}
 
-	// if err := context.SetDecisiveTeamMatch([]string{"Mark", "Jim"}, []string{"Joe", "Dave"}); err != nil {
-	// 	fmt.Println(err)
-	// }
+	if err := context.SetDecisiveTeamMatch([]string{"Mark", "Jim"}, []string{"Joe", "Dave"}); err != nil {
+		fmt.Println(err)
+	}
 
-	// if err := context.SetDrawMatch("Mark", "Jim"); err != nil {
-	// 	fmt.Println(err)
-	// }
+	if err := context.SetDrawMatch("Mark", "Jim"); err != nil {
+		fmt.Println(err)
+	}
 
 	result, err := context.GetPlayersOrderBy(driver.Elo, driver.Descending)
 	if err != nil {

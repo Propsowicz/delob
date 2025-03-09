@@ -33,7 +33,7 @@ func addToAuth(auth string, s interface{}) string {
 	return auth + toAdd
 }
 
-func parseClientFirst(s string) (string, int, error) {
+func parseClientFirstMessage(s string) (string, int, error) {
 	parts := strings.Split(s, ",")
 	const userPrefix string = "user="
 	const cnoncePrefix string = "c_nonce="
@@ -43,7 +43,7 @@ func parseClientFirst(s string) (string, int, error) {
 		}
 	}
 
-	return "", 1, fmt.Errorf("cannot parse client first message")
+	return "", 0, fmt.Errorf("cannot parse client first message")
 }
 
 func generateNonce() int {

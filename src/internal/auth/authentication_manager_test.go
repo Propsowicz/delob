@@ -1,54 +1,20 @@
 package auth
 
 import (
+	"fmt"
 	"testing"
-	"time"
 )
 
-func Test_IfTryAuthenticateReturnsFalseWhenEmpty(t *testing.T) {
+func Test_IfCanParseClientFirstMessageCorrectly(t *testing.T) {
 	authM := NewAuthenticationManager()
-	username := "testUser"
-	ip := "3.4.56.78"
+	userMock := "testUser"
 
-	result := authM.TryAuthenticate(username, ip)
+	user, _, _, err := authM.ParseClientFirstMessageToAuthString(fmt.Sprintf("user=%s,c_nonce=23", userMock))
 
-	if result {
-		t.Errorf("Expected false result.")
+	if err != nil {
+		t.Errorf("Expected no error.")
 	}
-}
-
-func Test_IfTryAuthenticateReturnsTrueWhenFindNotExpiredSession(t *testing.T) {
-	authM := NewAuthenticationManager()
-	username := "testUser"
-	ip := "3.4.56.78"
-	authM.sessions = append(authM.sessions, session{
-		user:           username,
-		ip:             ip,
-		expirationTime: time.Now().UnixMilli() + int64(time.Minute),
-		hash:           "s53ef23",
-	})
-
-	result := authM.TryAuthenticate(username, ip)
-
-	if !result {
-		t.Errorf("Expected true result.")
-	}
-}
-
-func Test_IfTryAuthenticateReturnsFalseWhenCannotFindNotExpiredSession(t *testing.T) {
-	authM := NewAuthenticationManager()
-	username := "testUser1"
-	ip := "3.4.56.78232"
-	authM.sessions = append(authM.sessions, session{
-		user:           "a",
-		ip:             "0.0.0.0",
-		expirationTime: time.Now().UnixMilli(),
-		hash:           "s53ef23",
-	})
-
-	result := authM.TryAuthenticate(username, ip)
-
-	if result {
-		t.Errorf("Expected false result.")
+	if user != userMock {
+		t.Errorf("Cannot parse user.")
 	}
 }
