@@ -21,6 +21,8 @@
 # data
 log_data
 *.delob
+.auth
+delobdriver
 
 # Go workspace file
 go.work

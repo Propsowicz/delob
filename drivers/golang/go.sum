@@ -1,2 +1,10 @@
 github.com/Propsowicz/delob-driver v0.1.0 h1:7OMbMHZ7VYYafYnwWjXUardqx1+1L8X25hO55mv8JoA=
 github.com/Propsowicz/delob-driver v0.1.0/go.mod h1:v1mO6lShwWcWqnhPimOX4U6UlqTsRrLWa0z9dDxh+Qo=
+github.com/Propsowicz/delob-driver v0.2.0 h1:SXnjq3aOAqAP+jnURt+MjjTtqDQwbm5J0rTb5h4OzVI=
+github.com/Propsowicz/delob-driver v0.2.0/go.mod h1:KR6O/EA1gdR8+VxAs2MaIg46wUzz3zoB4+V+ibI+HU4=
+github.com/Propsowicz/delob-driver v0.2.1 h1:R3/Yqis1VbKskAzNCJw0KPcwEGhG38eBKF9LJEfGY+s=
+github.com/Propsowicz/delob-driver v0.2.1/go.mod h1:KR6O/EA1gdR8+VxAs2MaIg46wUzz3zoB4+V+ibI+HU4=
+github.com/Propsowicz/delob-driver v0.2.2 h1:t4NF9Ns2GLeso24EpuCwZiCLRCAn1/nDkdr39yJd7UM=
+github.com/Propsowicz/delob-driver v0.2.2/go.mod h1:KR6O/EA1gdR8+VxAs2MaIg46wUzz3zoB4+V+ibI+HU4=
+golang.org/x/crypto v0.36.0 h1:AnAEvhDddvBdpY+uR+MyHmuZzzNqXSe/GvuDeob5L34=
+golang.org/x/crypto v0.36.0/go.mod h1:Y4J0ReaxCR1IMaabaSMugxJES1EpwhBHhv2bDHklZvc=
