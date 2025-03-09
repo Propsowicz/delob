@@ -9,8 +9,8 @@ type request struct {
 }
 
 func parseRequest(s, ip string) (request, error) {
-	// CRLF (Carriage Return + Line Feed) as separator
-	parts := strings.Split(s, "\r\n")
+	const uniqueDelimiter string = "\x1E\x1F"
+	parts := strings.Split(s, uniqueDelimiter)
 
 	r := request{}
 	r.user = parts[0]
