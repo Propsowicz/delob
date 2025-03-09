@@ -17,7 +17,7 @@ func (a *AuthenticationManager) IsUserAuthenticated(user, ip string) bool {
 	return a.sessionManager.IsSessionValid(user, ip)
 }
 
-func (a *AuthenticationManager) AddServerFirstMessage(auth, user string) (string, error) {
+func (a *AuthenticationManager) PrepareServerFirstMessage(auth, user string) (string, error) {
 	userData, err := LoadUserData(user)
 	if err != nil {
 		return "", err

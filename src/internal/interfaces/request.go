@@ -9,7 +9,8 @@ type request struct {
 }
 
 func parseRequest(s, ip string) (request, error) {
-	parts := strings.Split(s, "|||")
+	// CRLF (Carriage Return + Line Feed) as separator
+	parts := strings.Split(s, "\r\n")
 
 	r := request{}
 	r.user = parts[0]

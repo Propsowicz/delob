@@ -122,14 +122,14 @@ func (s *TcpServer) verifyProof(proof, user, ip, auth string) bool {
 
 func (s *TcpServer) sendVerifierResult(writer bufio.Writer, traceId string, proofIsCorrect bool) {
 	if proofIsCorrect {
-		s.writeString(writer, s.newResponse(proofVerified, ""), traceId)
+		s.writeString(writer, s.newResponse(user_verified, ""), traceId)
 	} else {
-		s.writeString(writer, s.newResponse(proofNotVerified, ""), traceId)
+		s.writeString(writer, s.newResponse(user_not_verified, ""), traceId)
 	}
 }
 
 func (s *TcpServer) getClientFirstMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId string) (string, string, error) {
-	s.writeString(writer, s.newResponse(authChallenge, ""), traceId)
+	s.writeString(writer, s.newResponse(authentication_challenge, ""), traceId)
 
 	clientFirstMessage, errClientFirst := s.getRequest(reader, c.RemoteAddr().String())
 	if errClientFirst != nil {
@@ -149,7 +149,7 @@ func (s *TcpServer) getClientFirstMessage(c net.Conn, writer bufio.Writer, reade
 }
 
 func (s *TcpServer) prepareServerFirstMessage(auth, user string) (string, error) {
-	auth, errServerFirst := s.authManager.AddServerFirstMessage(auth, user)
+	auth, errServerFirst := s.authManager.PrepareServerFirstMessage(auth, user)
 	if errServerFirst != nil {
 		return "", errServerFirst
 	}
@@ -157,7 +157,7 @@ func (s *TcpServer) prepareServerFirstMessage(auth, user string) (string, error)
 }
 
 func (s *TcpServer) getProofMessage(c net.Conn, writer bufio.Writer, reader bufio.Reader, traceId, auth string) (request, error) {
-	s.writeString(writer, s.newResponse(authChallenge, auth), traceId)
+	s.writeString(writer, s.newResponse(authentication_challenge, auth), traceId)
 
 	return s.getRequest(reader, c.RemoteAddr().String())
 }
