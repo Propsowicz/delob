@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	connectionString := "Server=localhost;Port=5678;Uid=myUsername;Pwd=myPassword;"
+	connectionString := "Server=localhost;Port=5678;Uid=myUser;Pwd=pa$$word;"
 	context, err := driver.NewContext(connectionString)
 	if err != nil {
 		fmt.Println(err.Error())

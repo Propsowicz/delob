@@ -37,7 +37,7 @@ jobs:
           docker build \ 
           -t delob \
           --build-arg USERNAME=myUser \ 
-          --build-arg PASSWORD=pa$$word \ 
+          --build-arg PASSWORD='pa$$word' \ 
           .
           docker run -d -p 5678:5678 delob 
       

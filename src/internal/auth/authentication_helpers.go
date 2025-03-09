@@ -14,13 +14,6 @@ import (
 const clientKeySalt string = "Client Key"
 const serverKeySalt string = "Server Key"
 
-func addClientFirstAuthString(user string, c_nonce int) string {
-	var auth string
-	auth = addToAuth(auth, fmt.Sprintf("user=%s,", user))
-	auth = addToAuth(auth, fmt.Sprintf("c_nonce=%d,", c_nonce))
-	return auth
-}
-
 func addToAuth(auth string, s interface{}) string {
 	var toAdd string
 	switch v := s.(type) {
