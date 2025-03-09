@@ -34,10 +34,10 @@ jobs:
       - name: build_and_run_delob_in_docker
         run: |
           cd src
-          docker build \ 
+          docker build \
           -t delob \
-          --build-arg USERNAME=myUser \ 
-          --build-arg PASSWORD='pa$$word' \ 
+          --build-arg USERNAME=myUser \
+          --build-arg PASSWORD='pa$$word' \
           .
           docker run -d -p 5678:5678 delob 
       
