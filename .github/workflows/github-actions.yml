@@ -36,10 +36,8 @@ jobs:
           cd src
           docker build \
           -t delob \
-          --build-arg USERNAME=myUser \
-          --build-arg PASSWORD='pa$$word' \
           .
-          docker run -d -p 5678:5678 delob 
+          docker run -d -p 5678:5678 delob USERNAME=myUser PASSWORD='pa$$word'
       
       - name: run_integration_tests
         run: |

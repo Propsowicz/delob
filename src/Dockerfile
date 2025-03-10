@@ -1,4 +1,3 @@
-# build delob main app 
 FROM golang:1.23-bullseye AS builder
 
 WORKDIR /app
@@ -14,11 +13,7 @@ RUN go build -o delob
 WORKDIR /app/cli
 RUN go build -o elo
 
-# final stage 
 FROM debian:buster-slim
-
-ARG USERNAME
-ARG PASSWORD
 
 ENV BUILD_ENV=docker
 
@@ -28,11 +23,13 @@ WORKDIR /home/delobuser
 
 COPY --from=builder /app/cmd/delob .
 COPY --from=builder /app/cli/elo .
+COPY --from=builder /app/init.sh .
+
 RUN chmod +x delob && chown delobuser:delobgroup .
 
 EXPOSE 5678
 
 USER delobuser
-RUN ./elo --add-user ${USERNAME} ${PASSWORD}
+ENTRYPOINT ["/home/delobuser/init.sh"]
 
-CMD ["./delob"]
+CMD ["delob", "delob"]
