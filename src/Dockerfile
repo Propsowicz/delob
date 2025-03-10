@@ -29,7 +29,9 @@ RUN chmod +x delob && chown delobuser:delobgroup .
 
 EXPOSE 5678
 
-USER delobuser
+RUN chmod +x /home/delobuser/init.sh
 ENTRYPOINT ["/home/delobuser/init.sh"]
+
+USER delobuser
 
 CMD ["delob", "delob"]
