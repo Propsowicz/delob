@@ -34,4 +34,4 @@ ENTRYPOINT ["/home/delobuser/init.sh"]
 
 USER delobuser
 
-CMD ["delob", "delob"]
+CMD ["USERNAME=delobUser", "PASSWORD=delobPassword"]

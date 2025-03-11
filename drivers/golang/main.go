@@ -12,6 +12,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	defer context.Close()
 
 	if err := context.AddPlayers([]string{"Joe", "Mark", "Jim", "Dave"}); err != nil {
 		fmt.Println(err)
