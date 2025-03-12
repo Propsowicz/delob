@@ -28,7 +28,7 @@ func NewBufferManager() (BufferManager, error) {
 	}
 
 	return BufferManager{
-		logDataManager: &logDataManager,
+		logDataManager: logDataManager,
 	}, nil
 }
 

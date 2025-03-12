@@ -30,7 +30,7 @@ type DataLogsDictionaryManager struct {
 	path                       string
 }
 
-func NewDataLogsDictionaryManager() (DataLogsDictionaryManager, error) {
+func NewDataLogsDictionaryManager() (*DataLogsDictionaryManager, error) {
 	b := DataLogsDictionaryManager{
 		dataCatalogFileName: "logs",
 		dataDirectory:       ".data",
@@ -39,14 +39,14 @@ func NewDataLogsDictionaryManager() (DataLogsDictionaryManager, error) {
 
 	err := os.MkdirAll(b.dataDirectory, 0755)
 	if err != nil {
-		return b, err
+		return &b, err
 	}
 
 	if _, err := os.Stat(b.path); !errors.Is(err, os.ErrNotExist) {
 		b.IsLogsDictionaryFileExists = true
 	}
 
-	return b, nil
+	return &b, nil
 }
 
 type DataLog struct {
