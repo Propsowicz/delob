@@ -48,8 +48,8 @@ func (p *Processor) Initialize() error {
 	for i := range dataLogs {
 		transaction := buffer.NewTransaction()
 		transaction.Start()
-		parsedExpression, err := parser.ParseDataLogJson(dataLogs[i].ParsedExpressionType,
-			dataLogs[i].ParsedExpression)
+		parsedExpression, err := parser.ParseDataLogJson(dataLogs[i].ExprType,
+			dataLogs[i].Expr)
 
 		if err != nil {
 			return err

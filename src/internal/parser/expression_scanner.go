@@ -19,9 +19,9 @@ type Token struct {
 type ExpressionType string
 
 const (
-	AddPlayersCommandType ExpressionType = "AddPlayersCommandType"
-	AddMatchCommandType   ExpressionType = "AddMatchCommandType"
-	SelectQueryType       ExpressionType = "SelectQueryType"
+	AddPlayersCommandType ExpressionType = "add_players"
+	AddMatchCommandType   ExpressionType = "add_match"
+	SelectQueryType       ExpressionType = "select_players"
 )
 
 type TokenType string
