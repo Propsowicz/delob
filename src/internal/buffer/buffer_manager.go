@@ -1,7 +1,7 @@
 package buffer
 
 import (
-	"fmt"
+	p "delob/internal/buffer/persistence"
 	"sync"
 )
 
@@ -14,7 +14,7 @@ const (
 )
 
 type BufferManager struct {
-	logDataManager *DataLogsDictionaryManager
+	logDataManager *p.LogsPersistenceManager
 	syncMutex      sync.Mutex
 	pageDictionary PageDictionary
 	pages          []*Page
@@ -22,45 +22,43 @@ type BufferManager struct {
 }
 
 func NewBufferManager() (BufferManager, error) {
-	logDataManager, err := NewDataLogsDictionaryManager()
+	logDataManager, err := p.NewLogsPersistenceManager()
 	if err != nil {
 		return BufferManager{}, err
 	}
 
 	return BufferManager{
-		logDataManager: &logDataManager,
+		logDataManager: logDataManager,
 	}, nil
 }
 
-// append to persistance file
 func (buffer *BufferManager) AppendToDataLogsDictionary(traceId, parsedExpressionType,
 	parsedExpression string) error {
-	return buffer.logDataManager.Append(NewDataLog(traceId, parsedExpressionType, parsedExpression))
+	return buffer.logDataManager.Append(p.NewDataLog(traceId, parsedExpressionType, parsedExpression))
 }
 
-// get from persistance file
-func (buffer *BufferManager) LoadFromDataLogsDictionary() ([]DataLog, error) {
-	if !buffer.logDataManager.IsLogsDictionaryFileExists {
-		return []DataLog{}, nil
+func (buffer *BufferManager) LoadFromDataLogsDictionary() ([]p.Log, error) {
+	if !buffer.logDataManager.LogsFileExists {
+		return []p.Log{}, nil
 	}
 
 	result, err := buffer.logDataManager.Read()
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	return result, nil
 }
 
-func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *Match, transaction *Transaction) error {
-	if _, err := buffer.getPageAdresses(entityId, isInProgressOrSuccess); err == nil {
-		return fmt.Errorf("player already exists: %s", entityId)
+func (buffer *BufferManager) AddPlayer(key string, value int16, matchRef *Match, transaction *Transaction) error {
+	if _, err := buffer.getPageAdresses(key, isInProgressOrSuccess); err == nil {
+		return errorPlayerAlreadyExists(key)
 	}
 
-	pageAdress := buffer.addPage(entityId, value, matchRef, transaction)
+	pageAdress := buffer.addPage(key, value, matchRef, transaction)
 
 	buffer.syncMutex.Lock()
 
-	pageDictAdress, err := buffer.addPageToDictionary(entityId, pageAdress)
+	pageDictAdress, err := buffer.addPageToDictionary(key, pageAdress)
 
 	if err != nil {
 		return err
@@ -72,9 +70,9 @@ func (buffer *BufferManager) AddPlayer(entityId string, value int16, matchRef *M
 	return nil
 }
 
-func (buffer *BufferManager) UpdatePlayersElo(entityKeys []string, eloLambda int16, matchRef *Match, transaction *Transaction) error {
-	for i := range entityKeys {
-		err := buffer.UpdatePlayer(entityKeys[i], eloLambda, matchRef, transaction)
+func (buffer *BufferManager) UpdatePlayersElo(keys []string, eloLambda int16, matchRef *Match, transaction *Transaction) error {
+	for i := range keys {
+		err := buffer.UpdatePlayer(keys[i], eloLambda, matchRef, transaction)
 		if err != nil {
 			return err
 		}
@@ -82,18 +80,18 @@ func (buffer *BufferManager) UpdatePlayersElo(entityKeys []string, eloLambda int
 	return nil
 }
 
-func (buffer *BufferManager) UpdatePlayer(entityId string, value int16, matchRef *Match, transaction *Transaction) error {
-	isAddedToExistingPage, errTryToAppend := buffer.tryAppendToPage(entityId, value, matchRef, transaction)
+func (buffer *BufferManager) UpdatePlayer(key string, value int16, matchRef *Match, transaction *Transaction) error {
+	isAddedToExistingPage, errTryToAppend := buffer.tryAppendToPage(key, value, matchRef, transaction)
 	if errTryToAppend != nil {
 		return errTryToAppend
 	}
 
 	if !isAddedToExistingPage {
-		pageAdress := buffer.addPage(entityId, value, matchRef, transaction)
+		pageAdress := buffer.addPage(key, value, matchRef, transaction)
 
 		buffer.syncMutex.Lock()
 
-		errAppendPageToExistingKey := buffer.appendPageToExistingId(entityId, pageAdress)
+		errAppendPageToExistingKey := buffer.appendPageToExistingId(key, pageAdress)
 		if errAppendPageToExistingKey != nil {
 			return errAppendPageToExistingKey
 		}
