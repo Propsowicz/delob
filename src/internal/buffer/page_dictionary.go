@@ -2,7 +2,6 @@ package buffer
 
 import (
 	hasher "delob/internal/utils"
-	"fmt"
 )
 
 type PageDictionary struct {
@@ -10,21 +9,21 @@ type PageDictionary struct {
 }
 
 type PageData struct {
-	hashedEntityId    uint32
-	entityId          string
+	hashedKey         uint32
+	key               string
 	pageAdresses      []*Page
 	transactionStatus transactionStatus
 }
 
-func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Page) (*PageData, error) {
-	hashedEntityId, err := hasher.Calculate(entityId)
+func (buffer *BufferManager) addPageToDictionary(key string, pageAdress *Page) (*PageData, error) {
+	hashedKey, err := hasher.Calculate(key)
 	if err != nil {
 		return nil, err
 	}
 
 	newPageData := PageData{
-		hashedEntityId:    hashedEntityId,
-		entityId:          entityId,
+		hashedKey:         hashedKey,
+		key:               key,
 		pageAdresses:      []*Page{pageAdress},
 		transactionStatus: inProgress,
 	}
@@ -32,14 +31,14 @@ func (buffer *BufferManager) addPageToDictionary(entityId string, pageAdress *Pa
 	return buffer.pageDictionary.pagesData[len(buffer.pageDictionary.pagesData)-1], nil
 }
 
-func (buffer *BufferManager) appendPageToExistingId(entityId string, pageAdress *Page) error {
-	hashedEntityId, err := hasher.Calculate(entityId)
+func (buffer *BufferManager) appendPageToExistingId(key string, pageAdress *Page) error {
+	hashedKey, err := hasher.Calculate(key)
 	if err != nil {
 		return err
 	}
 
 	for i := range buffer.pageDictionary.pagesData {
-		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
+		if buffer.pageDictionary.pagesData[i].hashedKey == hashedKey {
 			buffer.pageDictionary.pagesData[i].pageAdresses =
 				append(buffer.pageDictionary.pagesData[i].pageAdresses, pageAdress)
 		}
@@ -58,15 +57,15 @@ func isSuccess(transactionStatus transactionStatus) bool {
 	return transactionStatus == success
 }
 
-func (buffer *BufferManager) getPageAdresses(entityId string,
+func (buffer *BufferManager) getPageAdresses(key string,
 	transactionStatusCondition transactionStatusCondition) ([]*Page, error) {
-	hashedEntityId, err := hasher.Calculate(entityId)
+	hashedKey, err := hasher.Calculate(key)
 	if err != nil {
 		return nil, err
 	}
 
 	for i := range buffer.pageDictionary.pagesData {
-		if buffer.pageDictionary.pagesData[i].hashedEntityId == hashedEntityId {
+		if buffer.pageDictionary.pagesData[i].hashedKey == hashedKey {
 			if buffer.pageDictionary.pagesData[i].transactionStatus == failed {
 				continue
 			}
@@ -74,8 +73,8 @@ func (buffer *BufferManager) getPageAdresses(entityId string,
 			if transactionStatusCondition(buffer.pageDictionary.pagesData[i].transactionStatus) {
 				return buffer.pageDictionary.pagesData[i].pageAdresses, nil
 			}
-			return nil, fmt.Errorf("cannot find entity with given id: %s", entityId)
+			return nil, errorPlayerDoesNotExists(key)
 		}
 	}
-	return nil, fmt.Errorf("cannot find entity with given id: %s", entityId)
+	return nil, errorPlayerDoesNotExists(key)
 }

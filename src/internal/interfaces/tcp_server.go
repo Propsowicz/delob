@@ -7,7 +7,6 @@ import (
 	"delob/internal/utils/logger"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -22,17 +21,17 @@ type TcpServer struct {
 type requestHandler func(string, string) (string, error)
 
 func NewTcpServer(port int) TcpServer {
-	buildEnv := os.Getenv("BUILD_ENV")
 	hostAdress := "127.0.0.1"
-	if buildEnv == "docker" {
+	if utils.DockerEnvironment() {
 		hostAdress = "0.0.0.0"
 	}
+
 	serverAddress := fmt.Sprintf("%s:%s", hostAdress, strconv.Itoa(port))
 
 	return TcpServer{
 		port:            port,
 		serverAddress:   serverAddress,
-		protocolVersion: "00", // TODO
+		protocolVersion: "00",
 		authManager:     auth.NewAuthenticationManager(),
 	}
 }

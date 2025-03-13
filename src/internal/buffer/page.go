@@ -12,7 +12,7 @@ type Page struct {
 type Header struct {
 	isCached      bool
 	cachedValue   int16
-	entityId      string
+	key           string
 	lastModifed   int64
 	isLocked      bool
 	lastUsedIndex int16
@@ -41,10 +41,10 @@ func (page *Page) append(value int16, matchRef *Match, transaction *Transaction)
 	page.Header.lastUsedIndex++
 }
 
-func newPage(entityId string, value int16, matchRef *Match, transaction *Transaction) *Page {
+func newPage(key string, value int16, matchRef *Match, transaction *Transaction) *Page {
 	newPage := Page{
 		Header: Header{
-			entityId:      entityId,
+			key:           key,
 			lastModifed:   utils.Timestamp(),
 			isLocked:      false,
 			lastUsedIndex: 0,
@@ -98,13 +98,13 @@ func overrideEmptyRecord(r *Record, value int16, matchRef *Match, transaction *T
 	return r
 }
 
-func (buffer *BufferManager) addPage(entityId string, value int16, matchRef *Match, transaction *Transaction) *Page {
-	buffer.pages = append(buffer.pages, newPage(entityId, value, matchRef, transaction))
+func (buffer *BufferManager) addPage(key string, value int16, matchRef *Match, transaction *Transaction) *Page {
+	buffer.pages = append(buffer.pages, newPage(key, value, matchRef, transaction))
 	return buffer.pages[len(buffer.pages)-1]
 }
 
-func (buffer *BufferManager) tryAppendToPage(entityId string, value int16, matchRef *Match, transaction *Transaction) (bool, error) {
-	pageAdresses, err := buffer.getPageAdresses(entityId, isSuccess)
+func (buffer *BufferManager) tryAppendToPage(key string, value int16, matchRef *Match, transaction *Transaction) (bool, error) {
+	pageAdresses, err := buffer.getPageAdresses(key, isSuccess)
 	if err != nil {
 		return false, err
 	}
@@ -118,8 +118,8 @@ func (buffer *BufferManager) tryAppendToPage(entityId string, value int16, match
 	return false, nil
 }
 
-func (buffer *BufferManager) GetPages(entityId string) ([]Page, error) {
-	pageAdresses, err := buffer.getPageAdresses(entityId, isSuccess)
+func (buffer *BufferManager) GetPages(key string) ([]Page, error) {
+	pageAdresses, err := buffer.getPageAdresses(key, isSuccess)
 	if err != nil {
 		return []Page{}, err
 	}
@@ -132,14 +132,14 @@ func (buffer *BufferManager) GetPages(entityId string) ([]Page, error) {
 }
 
 func (buffer *BufferManager) GetAllPages() ([]string, [][]Page, error) {
-	entityIdsResult := []string{}
+	keysResult := []string{}
 	pagesCollectionResult := [][]Page{}
 
 	for i := range buffer.pageDictionary.pagesData {
 		if !isSuccess(buffer.pageDictionary.pagesData[i].transactionStatus) {
 			continue
 		}
-		entityIdsResult = append(entityIdsResult, buffer.pageDictionary.pagesData[i].entityId)
+		keysResult = append(keysResult, buffer.pageDictionary.pagesData[i].key)
 		pages := []Page{}
 		for j := range buffer.pageDictionary.pagesData[i].pageAdresses {
 			pages = append(pages, *buffer.pageDictionary.pagesData[i].pageAdresses[j])
@@ -147,5 +147,5 @@ func (buffer *BufferManager) GetAllPages() ([]string, [][]Page, error) {
 		pagesCollectionResult = append(pagesCollectionResult, pages)
 	}
 
-	return entityIdsResult, pagesCollectionResult, nil
+	return keysResult, pagesCollectionResult, nil
 }

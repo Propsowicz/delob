@@ -25,13 +25,12 @@ COPY --from=builder /app/cmd/delob .
 COPY --from=builder /app/cli/elo .
 COPY --from=builder /app/init.sh .
 
-RUN chmod +x delob && chown delobuser:delobgroup .
+RUN chmod +x delob && chown delobuser:delobgroup .\
+&& chmod +x /home/delobuser/init.sh
 
 EXPOSE 5678
 
-RUN chmod +x /home/delobuser/init.sh
 ENTRYPOINT ["/home/delobuser/init.sh"]
-
 USER delobuser
 
 CMD ["USERNAME=delobUser", "PASSWORD=delobPassword"]

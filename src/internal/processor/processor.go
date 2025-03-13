@@ -199,31 +199,31 @@ func (p *Processor) loadPlayersToUpdate(teamOneKeys []string, teamTwoKeys []stri
 	return teamOnePlayers, teamTwoPlayers, nil
 }
 
-func (p *Processor) getPlayerByKey(entityId string) (dto.Player, error) {
-	pages, err := p.bufferManager.GetPages(entityId)
+func (p *Processor) getPlayerByKey(key string) (dto.Player, error) {
+	pages, err := p.bufferManager.GetPages(key)
 	if err != nil {
 		return dto.Player{}, err
 	}
-	return dto.NewPlayer(entityId, pages), nil
+	return dto.NewPlayer(key, pages), nil
 }
 
 func (p *Processor) addPlayer(order []string, transaction *buffer.Transaction) (string, error) {
 	var numberOfAddedPlayers int16
 	var isFullySuccessful bool = true
-	var invalidEntityIds []string
+	var invalidKey []string
 
 	for i := range order {
 		err := p.bufferManager.AddPlayer(order[i], elo.INITIAL_ELO, nil, transaction)
 		if err != nil {
 			isFullySuccessful = false
-			invalidEntityIds = append(invalidEntityIds, order[i])
+			invalidKey = append(invalidKey, order[i])
 			continue
 		}
 		numberOfAddedPlayers++
 	}
 
 	if !isFullySuccessful {
-		return "", fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidEntityIds, " | "))
+		return "", fmt.Errorf("cannot add players with Ids: %s", strings.Join(invalidKey, " / "))
 	}
 	return affectNumberOfRowsMessage(numberOfAddedPlayers), nil
 }
@@ -250,6 +250,7 @@ func (p *Processor) finishTransaction(
 	transaction.Finish()
 
 	if !isOperationSuccessful {
+		logger.Error(traceId, orderError)
 		return orderError
 	}
 	return nil

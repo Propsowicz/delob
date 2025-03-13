@@ -1,4 +1,4 @@
-package buffer
+package persistence
 
 import (
 	"bytes"
@@ -11,69 +11,64 @@ import (
 	"math/rand"
 	"os"
 	"sync"
-	"time"
 )
-
-// type BackupManager interface {
-// 	Save()
-// 	Load()
-// }
 
 var logsSeparator []byte = []byte("\n")
 
-// TODO rename it
-type DataLogsDictionaryManager struct {
-	syncMutex                  sync.Mutex
-	IsLogsDictionaryFileExists bool
-	dataCatalogFileName        string
-	dataDirectory              string
-	path                       string
+type LogsPersistenceManager struct {
+	syncMutex      sync.Mutex
+	LogsFileExists bool
+	fileName       string
+	dir            string
+	path           string
 }
 
-func NewDataLogsDictionaryManager() (*DataLogsDictionaryManager, error) {
-	b := DataLogsDictionaryManager{
-		dataCatalogFileName: "logs",
-		dataDirectory:       ".data",
+func NewLogsPersistenceManager() (*LogsPersistenceManager, error) {
+	b := LogsPersistenceManager{
+		fileName: "logs",
+		dir:      ".data",
 	}
-	b.path = fmt.Sprintf("%s/%s.delob", b.dataDirectory, b.dataCatalogFileName)
+	b.path = fmt.Sprintf("%s/%s.delob", b.dir, b.fileName)
 
-	err := os.MkdirAll(b.dataDirectory, 0755)
+	err := os.MkdirAll(b.dir, 0755)
 	if err != nil {
 		return &b, err
 	}
 
 	if _, err := os.Stat(b.path); !errors.Is(err, os.ErrNotExist) {
-		b.IsLogsDictionaryFileExists = true
+		b.LogsFileExists = true
 	}
 
 	return &b, nil
 }
 
-type DataLog struct {
+type Log struct {
+	Ver      string
 	AddedOn  int64
 	ExprType string
 	Expr     string
 }
 
-func NewDataLog(traceId, parsedExpressionType, parsedExpression string) DataLog {
-	return DataLog{
+func NewDataLog(traceId, parsedExpressionType, parsedExpression string) Log {
+	return Log{
+		Ver:      "00",
 		AddedOn:  utils.Timestamp(),
 		ExprType: parsedExpressionType,
 		Expr:     parsedExpression,
 	}
 }
 
-func (b *DataLogsDictionaryManager) Read() ([]DataLog, error) {
+func (b *LogsPersistenceManager) Read() ([]Log, error) {
 	f, err := os.ReadFile(b.path)
 	if err != nil {
 		return nil, err
 	}
 
 	jsonLogs := bytes.Split(f, logsSeparator)
-	result := []DataLog{}
+	result := []Log{}
 
 	for i := 0; i < len(jsonLogs)-1; i++ {
-		obj := DataLog{}
+		obj := Log{}
 		err := json.Unmarshal(jsonLogs[i], &obj)
 		if err != nil {
 			return nil, err
@@ -84,7 +79,7 @@ func (b *DataLogsDictionaryManager) Read() ([]DataLog, error) {
 	return result, nil
 }
 
-func (b *DataLogsDictionaryManager) Append(log DataLog) error {
+func (b *LogsPersistenceManager) Append(log Log) error {
 	activePath, logFileExists := b.getActivePath()
 
 	byteLog, bufferLogChecksum, err := b.getLogData(log)
@@ -108,7 +103,7 @@ func (b *DataLogsDictionaryManager) Append(log DataLog) error {
 	return logFileIntegrityError
 }
 
-func (b *DataLogsDictionaryManager) appendToFile(byteLog []byte, path string) error {
+func (b *LogsPersistenceManager) appendToFile(byteLog []byte, path string) error {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
@@ -128,7 +123,7 @@ func (b *DataLogsDictionaryManager) appendToFile(byteLog []byte, path string) er
 	return f.Close()
 }
 
-func (b *DataLogsDictionaryManager) handleLogFileIntegrity(logAppendedSuccesfully, logFileExists bool, tempPath string) error {
+func (b *LogsPersistenceManager) handleLogFileIntegrity(logAppendedSuccesfully, logFileExists bool, tempPath string) error {
 	if !logFileExists {
 		if logAppendedSuccesfully {
 			return nil
@@ -144,7 +139,7 @@ func (b *DataLogsDictionaryManager) handleLogFileIntegrity(logAppendedSuccesfull
 	}
 }
 
-func (b *DataLogsDictionaryManager) isLogSuccessfullyAppended(bufferLogChecksum uint32, path string) bool {
+func (b *LogsPersistenceManager) isLogSuccessfullyAppended(bufferLogChecksum uint32, path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
 		return false
@@ -183,13 +178,13 @@ func (b *DataLogsDictionaryManager) isLogSuccessfullyAppended(bufferLogChecksum 
 	return bufferLogChecksum == fileLogChecksum
 }
 
-func (b *DataLogsDictionaryManager) getActivePath() (string, bool) {
+func (b *LogsPersistenceManager) getActivePath() (string, bool) {
 	logFileExists := exists(b.path)
 	if !logFileExists {
 		return b.path, false
 	}
-	rnd := rand.Intn(int(math.MaxInt16))
-	tempPath := fmt.Sprintf("%s_back.%d.%d", b.path, rnd, time.Now().Unix())
+	rnd := rand.Intn(int(math.MaxInt32))
+	tempPath := fmt.Sprintf("%s_back.%d", b.path, rnd)
 
 	if exists(tempPath) {
 		return b.getActivePath()
@@ -197,7 +192,7 @@ func (b *DataLogsDictionaryManager) getActivePath() (string, bool) {
 	return tempPath, true
 }
 
-func (b *DataLogsDictionaryManager) getLogData(log DataLog) ([]byte, uint32, error) {
+func (b *LogsPersistenceManager) getLogData(log Log) ([]byte, uint32, error) {
 	jsonLog, err := json.Marshal(log)
 	if err != nil {
 		return []byte{}, 0, err
