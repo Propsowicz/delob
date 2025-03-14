@@ -71,8 +71,8 @@ func (sc *ExpressionScanner) scanRawExpression(expression string) error {
 }
 
 func (sc *ExpressionScanner) tryTokenizeAddPlayer(sanitazedExpression string) error {
-	numOfMatches, tokenValue := extractKeyFromParanthesis(sanitazedExpression)
-	if numOfMatches != 1 {
+	numOfKeys, tokenValue := extractKeyFromParanthesis(sanitazedExpression)
+	if numOfKeys != 1 {
 		return errorInvalidNumberOfArguments(sc.traceId, sanitazedExpression, AddPlayersCommandType, 1)
 	}
 	sc.ExpressionType = AddPlayersCommandType
@@ -84,8 +84,8 @@ func (sc *ExpressionScanner) tryTokenizeAddPlayer(sanitazedExpression string) er
 }
 
 func (sc *ExpressionScanner) tryTokenizeAddPlayers(sanitazedExpression string) error {
-	numOfMatches, tokenValue := extractKeysFromBrackets(sanitazedExpression)
-	if numOfMatches != 1 {
+	numOfKeys, tokenValue := extractKeysFromBrackets(sanitazedExpression)
+	if numOfKeys != 1 {
 		return errorInvalidNumberOfArguments(sc.traceId, sanitazedExpression, AddPlayersCommandType, 1)
 	}
 	sc.ExpressionType = AddPlayersCommandType
@@ -172,19 +172,20 @@ func (sc *ExpressionScanner) tryTokenizeSelectPlayers(sanitazedExpression string
 		[]string{"*"},
 	})
 
-	sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
-
-	return nil
+	return sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
 }
 
-func (sc *ExpressionScanner) tryTokenizeOrderBySubExpression(sanitazedExpression string) {
-	isMatch, orderSubEpression := findMatch(order_by, sanitazedExpression)
+func (sc *ExpressionScanner) tryTokenizeOrderBySubExpression(sanitazedExpression string) error {
+	isMatch, orderSubEpression := findRegexMatch(order_by, sanitazedExpression)
 	if !isMatch {
-		return
+		return nil
 	}
 
 	splittedSubExpression := strings.Split(orderSubEpression, " ")
-	orderKey := splittedSubExpression[3:4]
+	orderKey, err := sc.getOrderKey(splittedSubExpression[3:4])
+	if err != nil {
+		return err
+	}
 
 	if strings.ToLower(splittedSubExpression[4]) == "asc" {
 		sc.tokens = append(sc.tokens, Token{
@@ -196,5 +197,17 @@ func (sc *ExpressionScanner) tryTokenizeOrderBySubExpression(sanitazedExpression
 			OrderByDesc,
 			orderKey,
 		})
+	}
+	return nil
+}
+
+func (sc *ExpressionScanner) getOrderKey(orderKeys []string) ([]string, error) {
+	switch orderKeys[0] {
+	case string(Elo):
+		return []string{string(Elo)}, nil
+	case string(Key):
+		return []string{string(Key)}, nil
+	default:
+		return nil, fmt.Errorf("cannot parse order key - %s", orderKeys[0])
 	}
 }

@@ -309,6 +309,16 @@ func Test_IfCanScan_SelectPlayer_ExpressionAndGetCorrectTypeAndTokens_OrderByElo
 	}
 }
 
+func Test_IfCannotScan_SelectPlayer_WhenHavingWrongOrderKeys(t *testing.T) {
+	scanner := newExpressionScannerMock()
+
+	err := scanner.scanRawExpression("SELECT Players ORDER BY elo ASC;")
+
+	if err == nil {
+		t.Errorf("Should throw error.")
+	}
+}
+
 func Test_IfCanScan_SelectPlayer_ExpressionAndGetCorrectTypeAndTokens_OrderByKeyDesc(t *testing.T) {
 	scanner := newExpressionScannerMock()
 

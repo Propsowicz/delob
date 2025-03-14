@@ -17,7 +17,7 @@ func isMatch(pattern regex_pattern, expression string) bool {
 	return r.MatchString(expression)
 }
 
-func findMatch(pattern regex_pattern, expression string) (bool, string) {
+func findRegexMatch(pattern regex_pattern, expression string) (bool, string) {
 	r := regexp.MustCompile(string(pattern))
 	str := r.FindString(expression)
 	if str == "" {
@@ -43,16 +43,21 @@ func extractKeyFromParanthesis(expression string) (int, []string) {
 
 func extractKeysFromBrackets(expression string) (int, [][]string) {
 	r := regexp.MustCompile(string(valueInBrackets))
-	matches := r.FindAllString(expression, -1)
+	keys := r.FindAllString(expression, -1)
 
-	if matches == nil {
+	if keys == nil {
 		return 0, nil
 	}
 	result := [][]string{}
 
-	for i := range matches {
-		content := strings.Trim(matches[i], "()")
-		items := strings.Split(content, ",")
+	for i := range keys {
+		items := []string{}
+		if !strings.Contains(keys[i], ",") {
+			items = append(items, strings.Trim(keys[i], "()"))
+		} else {
+			content := strings.Trim(keys[i], "()")
+			items = strings.Split(content, ",")
+		}
 
 		partResult := []string{}
 		for _, item := range items {
@@ -61,5 +66,5 @@ func extractKeysFromBrackets(expression string) (int, [][]string) {
 		result = append(result, partResult)
 	}
 
-	return len(matches), result
+	return len(keys), result
 }

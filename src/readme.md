@@ -6,7 +6,9 @@ PLAN
 5. OK - add pipeline
 6. OK - dockerized
 7. backup
-8. move tests to higher level
-9. add atomicity to saving logs
-FIX: order by elo asc; works but should throw since it needs to be Elo not elo
-FIX: parse -> should not be able to use key more than once
+8. OK - move tests to higher level
+9. OK - add atomicity to saving logs
+10. OK - FIX: order by elo asc; works but should throw since it needs to be Elo not elo
+11. OK - FIX: parse -> should not be able to use key more than once
+13. OK - FIX: assymetric number of players are possible
+14. add to docker image github artifactory 

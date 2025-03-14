@@ -40,16 +40,17 @@ type addToLogs struct {
 }
 
 func (p *Processor) Initialize() error {
-	dataLogs, err := p.bufferManager.LoadFromDataLogsDictionary()
+	logs, err := p.bufferManager.LoadLogsFromPersistenceFile()
 	if err != nil {
 		return err
 	}
 
-	for i := range dataLogs {
+	for i := range logs {
+		fmt.Println(logs[i])
 		transaction := buffer.NewTransaction()
 		transaction.Start()
-		parsedExpression, err := parser.ParseDataLogJson(dataLogs[i].ExprType,
-			dataLogs[i].Expr)
+		parsedExpression, err := parser.ParseDataLogJson(logs[i].ExprType,
+			logs[i].Expr)
 
 		if err != nil {
 			return err
@@ -242,7 +243,7 @@ func (p *Processor) finishTransaction(
 	}
 
 	if isWriteOperation && isOperationSuccessful {
-		errWriteToLogsDict := p.bufferManager.AppendToDataLogsDictionary(traceId, parsedExpression.GetStringType(), json)
+		errWriteToLogsDict := p.bufferManager.AppendLogsToPersistenceFile(traceId, parsedExpression.GetStringType(), json)
 		if errWriteToLogsDict != nil {
 			return errWriteToLogsDict
 		}
