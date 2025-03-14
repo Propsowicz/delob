@@ -24,5 +24,5 @@ const (
 
 const (
 	valueInParanthesis regex_pattern = `'([^']+)'`
-	valueInBrackets    regex_pattern = `\(\s*'([^']+)'(?:\s*,\s*'([^']+)')+\s*\)`
+	valueInBrackets    regex_pattern = `\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)`
 )

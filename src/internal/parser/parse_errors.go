@@ -19,6 +19,10 @@ func errorInvalidNumberOfArguments(traceId, expression string, exprType Expressi
 		expression, exprType, numberOfArgs, exampleExpression(exprType))
 }
 
+func errorCannotUseUserKeyMoreThanOnce(key string) error {
+	return fmt.Errorf("duplicate key '%s' detected - keys must be unique", key)
+}
+
 func exampleExpression(exprType ExpressionType) string {
 	switch exprType {
 	case AddPlayersCommandType:

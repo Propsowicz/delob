@@ -16,10 +16,10 @@ func assertCorrectKeyOrder(t *testing.T, record model.Player, expectedKey string
 	}
 }
 
-func setupSuite(_ *testing.T) func(t *testing.T) {
+func setupSuite[test *testing.T | *testing.F](_ test) func(t test) {
 	backupManagerPath := "log_data"
 	os.RemoveAll(backupManagerPath)
-	return func(t *testing.T) {
+	return func(t test) {
 		backupManagerPath := "log_data"
 		os.RemoveAll(backupManagerPath)
 	}
@@ -282,4 +282,54 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	assertCorrectKeyOrder(t, data[0], "B")
 	assertCorrectKeyOrder(t, data[1], "A")
 	assertCorrectKeyOrder(t, data[2], "X")
+}
+
+func FuzzTest_CannotUseUserMoreThanOnceInSetMatchAndDraw(f *testing.F) {
+	testCases := []string{
+		"SET WIN FOR ('a', 'a') AND LOSE FOR ('c', 'd');",
+		"SET WIN FOR ('a', 'b') AND LOSE FOR ('a', 'd');",
+		"SET WIN FOR 'a' AND LOSE FOR 'a';",
+		"SET DRAW BETWEEN ('a', 'a') AND ('c', 'd');",
+		"SET DRAW BETWEEN ('a', 'b') AND ('a', 'd');",
+		"SET DRAW BETWEEN 'a' AND 'a';",
+	}
+	for _, testCase := range testCases {
+		f.Add(testCase)
+	}
+
+	teardownSuite := setupSuite(f)
+	defer teardownSuite(f)
+
+	bufferManager, _ := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("traceId", "ADD PLAYERS ('a', 'b', 'c', 'd');")
+
+	f.Fuzz(func(t *testing.T, connectionString string) {
+		_, err := p.Execute("traceId", "SET WIN FOR ('a', 'a') AND LOSE FOR ('c', 'd');")
+		if err == nil {
+			t.Errorf("Should throw error")
+		}
+	})
+}
+
+func Test_IfCanSetMatchForAssymetricNumberOfPlayerKeys(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+	p.Execute("traceId", "ADD PLAYERS ('Tom', 'Joe', 'Jim');")
+
+	_, err := p.Execute("traceId", "SET WIN FOR ('Tom', 'Jim') AND LOSE FOR ('Joe');")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+
+	_, err = p.Execute("traceId", "SET DRAW BETWEEN ('Tom', 'Jim') AND ('Joe');")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
 }

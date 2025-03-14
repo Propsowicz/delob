@@ -50,7 +50,7 @@ func TestIfDataIsPersistentBetweenDatabaseRunsWithTransactionalData(t *testing.T
 
 	resultFirstRun, _ := processorFirstRun.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
 
-	if resultFirstRun != "[{\"Key\":\"Tom\",\"Elo\":1331},{\"Key\":\"Bob\",\"Elo\":1315},{\"Key\":\"Jim\",\"Elo\":1285},{\"Key\":\"Joe\",\"Elo\":1269}]" {
+	if resultFirstRun != "[{\"Key\":\"Tom\",\"Elo\":1344},{\"Key\":\"Bob\",\"Elo\":1314},{\"Key\":\"Jim\",\"Elo\":1272},{\"Key\":\"Joe\",\"Elo\":1256}]" {
 		t.Errorf("Data is not correct - %s.", resultFirstRun)
 	}
 

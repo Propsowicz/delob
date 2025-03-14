@@ -12,6 +12,11 @@ type AddMatchCommand struct {
 }
 
 func newAddMatchCommand(traceId string, tokens []Token) (ParsedExpression, error) {
+	err := checkForDuplicatedKeys(tokens[0].Value, tokens[1].Value)
+	if err != nil {
+		return nil, err
+	}
+
 	if tokens[0].Token == SetDraw {
 		return AddMatchCommand{
 			MatchResult: shared.Draw,
@@ -35,6 +40,26 @@ func newAddMatchCommand(traceId string, tokens []Token) (ParsedExpression, error
 	}
 
 	return nil, errorCannotGenerateParsedExpression(traceId)
+}
+
+func checkForDuplicatedKeys(t1, t2 []string) error {
+	seen := make(map[string]bool, len(t1)+len(t2))
+
+	for i := range t1 {
+		if _, exists := seen[t1[i]]; exists {
+			return errorCannotUseUserKeyMoreThanOnce(t1[i])
+		}
+		seen[t1[i]] = true
+	}
+
+	for j := range t2 {
+		if _, exists := seen[t2[j]]; exists {
+			return errorCannotUseUserKeyMoreThanOnce(t2[j])
+		}
+		seen[t2[j]] = true
+	}
+	return nil
+
 }
 
 func (a AddMatchCommand) GetType() ExpressionType {

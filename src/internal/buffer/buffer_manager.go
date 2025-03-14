@@ -32,12 +32,12 @@ func NewBufferManager() (BufferManager, error) {
 	}, nil
 }
 
-func (buffer *BufferManager) AppendToDataLogsDictionary(traceId, parsedExpressionType,
+func (buffer *BufferManager) AppendLogsToPersistenceFile(traceId, parsedExpressionType,
 	parsedExpression string) error {
 	return buffer.logDataManager.Append(p.NewDataLog(traceId, parsedExpressionType, parsedExpression))
 }
 
-func (buffer *BufferManager) LoadFromDataLogsDictionary() ([]p.Log, error) {
+func (buffer *BufferManager) LoadLogsFromPersistenceFile() ([]p.Log, error) {
 	if !buffer.logDataManager.LogsFileExists {
 		return []p.Log{}, nil
 	}

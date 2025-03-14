@@ -73,7 +73,6 @@ func (b *LogsPersistenceManager) Read() ([]Log, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		result = append(result, obj)
 	}
 	return result, nil
