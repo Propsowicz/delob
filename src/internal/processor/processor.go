@@ -46,7 +46,6 @@ func (p *Processor) Initialize() error {
 	}
 
 	for i := range logs {
-		fmt.Println(logs[i])
 		transaction := buffer.NewTransaction()
 		transaction.Start()
 		parsedExpression, err := parser.ParseDataLogJson(logs[i].ExprType,

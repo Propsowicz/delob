@@ -12,11 +12,21 @@ type Player struct {
 
 func NewPlayer(key string, pages []buffer.Page) Player {
 	records := []int16{}
+	var elo int16
 
 	for i := 0; i < len(pages); i++ {
+
+		if pages[i].Header.IsCached {
+			elo += pages[i].Header.CachedValue
+		}
+
 		for j := 0; j < len(pages[i].Body); j++ {
 			if !pages[i].Body[j].IsTransactionStatusSuccessful() {
 				continue
+			}
+
+			if !pages[i].Header.IsCached {
+				elo += pages[i].Body[j].Value
 			}
 
 			records = append(
@@ -28,19 +38,10 @@ func NewPlayer(key string, pages []buffer.Page) Player {
 
 	player := Player{
 		Key:     key,
+		Elo:     elo,
 		records: records,
 	}
-	player.calculateElo()
 	return player
-}
-
-func (p *Player) calculateElo() {
-	var result int16
-	for i := range p.records {
-		result += p.records[i]
-	}
-
-	p.Elo = result
 }
 
 func MapPlayerToKeysCollection(players []Player) []string {

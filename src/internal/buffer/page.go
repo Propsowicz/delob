@@ -10,8 +10,8 @@ type Page struct {
 }
 
 type Header struct {
-	isCached      bool
-	cachedValue   int16
+	IsCached      bool
+	CachedValue   int16
 	key           string
 	lastModifed   int64
 	isLocked      bool
@@ -112,10 +112,24 @@ func (buffer *BufferManager) tryAppendToPage(key string, value int16, matchRef *
 	for i := 0; i < len(pageAdresses); i++ {
 		if !pageAdresses[i].isPageFull() {
 			pageAdresses[i].append(value, matchRef, transaction)
+
+			buffer.tryCache(i, pageAdresses)
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+func (buffer *BufferManager) tryCache(i int, pageAdresses []*Page) {
+	if pageAdresses[i].isPageFull() {
+		var value int16
+		for j := range pageAdresses[i].Body {
+			value += pageAdresses[i].Body[j].Value
+		}
+
+		pageAdresses[i].Header.CachedValue = value
+		pageAdresses[i].Header.IsCached = true
+	}
 }
 
 func (buffer *BufferManager) GetPages(key string) ([]Page, error) {
