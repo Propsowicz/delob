@@ -1,0 +1,26 @@
+name: deploy on ghcr
+run-name: tag-release
+
+on: 
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  delob_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout_code
+        uses: actions/checkout@v3
+
+      - name: login_to_ghcr
+        run: |
+          echo $GHCR_TOKEN | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+      
+      - name: deploy_delob_image_to_ghcr
+        run: |
+          cd src
+          docker build \
+          --tag ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref }} \
+          .
+          docker push ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref }}
