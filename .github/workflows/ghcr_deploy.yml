@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 jobs:
-  delob_tests:
+  deploy_delob_image_to_ghcr:
     runs-on: ubuntu-latest
     steps:
       - name: checkout_code
@@ -15,7 +15,7 @@ jobs:
 
       - name: login_to_ghcr
         run: |
-          echo $GHCR_TOKEN | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
       
       - name: deploy_delob_image_to_ghcr
         run: |
