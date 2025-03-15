@@ -21,6 +21,6 @@ jobs:
         run: |
           cd src
           docker build \
-          --tag ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref }} \
+          --tag ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref_name }} \
           .
-          docker push ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref }}
+          docker push ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref_name }}
