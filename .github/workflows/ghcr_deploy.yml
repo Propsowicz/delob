@@ -17,10 +17,15 @@ jobs:
         run: |
           echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
       
+      - name: repository_name
+        uses: ASzc/change-string-case-action@v2
+        with:
+            string: ${{ github.repository_owner }}
+
       - name: deploy_delob_image_to_ghcr
         run: |
           cd src
           docker build \
-          --tag ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref_name }} \
+          --tag ghcr.io/${{ steps.repository_name.outputs.lowercase }}/delob:${{ github.ref_name }} \
           .
-          docker push ghcr.io/${{ github.repository_owner }}/delob:${{ github.ref_name }}
+          docker push ghcr.io/${{ steps.repository_name.outputs.lowercase }}/delob:${{ github.ref_name }}
