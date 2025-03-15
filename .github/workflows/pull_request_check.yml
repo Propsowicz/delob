@@ -1,4 +1,4 @@
-name: delob database pipeline
+name: delob pull request check pipeline
 run-name: pull-request
 
 on: 
