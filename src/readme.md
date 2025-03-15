@@ -5,7 +5,7 @@ PLAN
 4. OK - add SCRAM (user, credentials, store, handshake, session store)
 5. OK - add pipeline
 6. OK - dockerized
-7. backup
+7. OK - cache page values
 8. OK - move tests to higher level
 9. OK - add atomicity to saving logs
 10. OK - FIX: order by elo asc; works but should throw since it needs to be Elo not elo
