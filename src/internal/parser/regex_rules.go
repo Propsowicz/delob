@@ -7,8 +7,11 @@ const (
 	add_players        regex_pattern = `(?i)^add players \([^)]+\)`
 	add_decisive_match regex_pattern = `(?i)^set (win for|lose for) ('[^']*'|\([^)]+\)) and (win for|lose for) ('[^']*'|\([^)]+\))$`
 	add_draw_match     regex_pattern = `(?i)^set draw between ('[^']*'|\([^)]+\)) and ('[^']*'|\([^)]+\))$`
-	select_players     regex_pattern = `(?i)^select players`
+	select_statement   regex_pattern = `(?i)^select `
 	order_by           regex_pattern = `(?i) order by (elo|key) (asc|desc)`
+
+	// how many of select statemenst do we need? players with stats, players with match, matches. I guess no more. Bcuz of that I will use hardcoded regex to parse select statement
+	select_players_with_stats regex_pattern = `(?i) players with stats`
 )
 
 // supported functions
@@ -21,6 +24,7 @@ const (
 // SELECT Players;
 // SELECT Players ORDER BY Elo DESC;
 // SELECT Players ORDER BY Key DESC;
+// SELECT Players WITH Stats;
 
 const (
 	valueInParanthesis regex_pattern = `'([^']+)'`

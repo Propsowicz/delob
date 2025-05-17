@@ -276,7 +276,38 @@ func Test_IfCanScan_SelectPlayer_ExpressionAndGetCorrectTypeAndTokens(t *testing
 	if result[0].Token != SelectPlayers {
 		t.Errorf("Invalid logical token")
 	}
-	if result[0].Value[0] != "*" {
+	if result[0].Value[0] != "players" {
+		t.Errorf("Invalid logical token")
+	}
+}
+
+func Test_IfCanScan_SelectPlayerAndStatsHistory_ExpressionAndGetCorrectTypeAndTokens(t *testing.T) {
+	scanner := newExpressionScannerMock()
+
+	err := scanner.scanRawExpression("SELECT Players WITH Stats;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+
+	expressionType, result, errTokens := scanner.getLogicalTokens()
+
+	if errTokens != nil {
+		t.Errorf("Should not throw error.")
+	}
+	if expressionType != SelectQueryType {
+		t.Errorf("Wrong expression type.")
+	}
+	if len(result) != 1 {
+		t.Errorf("Wrong numbers of tokens.")
+	}
+	if result[0].Token != SelectPlayers {
+		t.Errorf("Invalid logical token")
+	}
+	if result[0].Value[0] != "players" {
+		t.Errorf("Invalid logical token")
+	}
+	if result[0].Value[1] != "stats" {
 		t.Errorf("Invalid logical token")
 	}
 }
@@ -301,7 +332,7 @@ func Test_IfCanScan_SelectPlayer_ExpressionAndGetCorrectTypeAndTokens_OrderByElo
 	if len(result) != 2 {
 		t.Errorf("Wrong numbers of tokens.")
 	}
-	if result[0].Token != SelectPlayers || result[0].Value[0] != "*" {
+	if result[0].Token != SelectPlayers || result[0].Value[0] != "players" {
 		t.Errorf("Invalid logical token")
 	}
 	if result[1].Token != OrderByAsc || result[1].Value[0] != "Elo" {
@@ -339,7 +370,7 @@ func Test_IfCanScan_SelectPlayer_ExpressionAndGetCorrectTypeAndTokens_OrderByKey
 	if len(result) != 2 {
 		t.Errorf("Wrong numbers of tokens.")
 	}
-	if result[0].Token != SelectPlayers || result[0].Value[0] != "*" {
+	if result[0].Token != SelectPlayers || result[0].Value[0] != "players" {
 		t.Errorf("Invalid logical token")
 	}
 	if result[1].Token != OrderByDesc || result[1].Value[0] != "Key" {

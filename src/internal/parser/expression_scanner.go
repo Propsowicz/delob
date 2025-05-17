@@ -21,7 +21,14 @@ type ExpressionType string
 const (
 	AddPlayersCommandType ExpressionType = "add_players"
 	AddMatchCommandType   ExpressionType = "add_match"
-	SelectQueryType       ExpressionType = "select_players"
+	SelectQueryType       ExpressionType = "select_statement"
+)
+
+type SelectStatementComponent string
+
+const (
+	Players      SelectStatementComponent = "players"
+	StatsHistory SelectStatementComponent = "stats"
 )
 
 type TokenType string
@@ -63,8 +70,10 @@ func (sc *ExpressionScanner) scanRawExpression(expression string) error {
 		return sc.tryTokenizeSetWinAndLose(sanitazedExpression)
 	case isMatch(add_draw_match, sanitazedExpression):
 		return sc.tryTokenizeSetDraw(sanitazedExpression)
-	case isMatch(select_players, sanitazedExpression):
-		return sc.tryTokenizeSelectPlayers(sanitazedExpression)
+
+	case isMatch(select_statement, sanitazedExpression):
+		return sc.tryTokenizeSelectStatement(sanitazedExpression)
+
 	default:
 		return errorCannotParseExpression(sc.traceId, expression)
 	}
@@ -165,12 +174,20 @@ func (sc *ExpressionScanner) setDrawTokens(firstTokenValues, secondTokenValues [
 	})
 }
 
-func (sc *ExpressionScanner) tryTokenizeSelectPlayers(sanitazedExpression string) error {
+func (sc *ExpressionScanner) tryTokenizeSelectStatement(sanitazedExpression string) error {
 	sc.ExpressionType = SelectQueryType
-	sc.tokens = append(sc.tokens, Token{
-		SelectPlayers,
-		[]string{"*"},
-	})
+
+	if isMatch, _ := findRegexMatch(select_players_with_stats, sanitazedExpression); isMatch {
+		sc.tokens = append(sc.tokens, Token{
+			SelectPlayers,
+			[]string{string(Players), string(StatsHistory)},
+		})
+	} else {
+		sc.tokens = append(sc.tokens, Token{
+			SelectPlayers,
+			[]string{string(Players)},
+		})
+	}
 
 	return sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
 }
