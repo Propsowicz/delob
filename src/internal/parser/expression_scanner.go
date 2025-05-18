@@ -173,12 +173,17 @@ func (sc *ExpressionScanner) tryTokenizeSelectPlayers(sanitazedExpression string
 
 		queryComponents := sc.generateSelectQueryComponents(selectPlayerSubQuery)
 
+		if len(queryComponents) == 0 {
+			return errorCannotGetSelectQueryComponents(sc.traceId)
+		}
+
 		sc.tokens = append(sc.tokens, Token{
 			SelectPlayers,
 			queryComponents,
 		})
+		return sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
 	}
-	return sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
+	return errorCannotGetSelectQueryComponents(sc.traceId)
 }
 
 func (sc *ExpressionScanner) generateSelectQueryComponents(subquery string) []string {
@@ -192,7 +197,6 @@ func (sc *ExpressionScanner) generateSelectQueryComponents(subquery string) []st
 		sc.tryAddSelectComponent(&queryComponents, subquery, KeyComponent)
 		sc.tryAddSelectComponent(&queryComponents, subquery, EloComponent)
 		sc.tryAddSelectComponent(&queryComponents, subquery, EventsComponent)
-
 		sc.tryAddSelectComponent(&queryComponents, subquery, MatchesComponent)
 	}
 	return queryComponents

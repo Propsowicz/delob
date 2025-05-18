@@ -29,14 +29,11 @@ var componentMap = map[string]SelectQueryComponent{
 }
 
 func newSelectQuery(traceId string, tokens []Token) (ParsedExpression, error) {
-	// happy implementation for now
-
 	selectQuery := SelectQuery{
 		SelectQueryComponents: []SelectQueryComponent{},
 	}
 
 	if tokens[0].Token != SelectPlayers {
-		// if tokens[0].Token != SelectPlayers || len(tokens[0].Value) == 0 {
 		return nil, errorCannotGenerateParsedExpression(traceId)
 	}
 

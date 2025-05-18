@@ -11,7 +11,7 @@ const (
 	order_by           regex_pattern = `(?i) order by (elo|key) (asc|desc)`
 
 	// cases: players (key, elo) + stats (change, dt) + matches (other player keys) + matches SOLO (all matches)
-	select_all               regex_pattern = `(?i)^select * `
+	select_all               regex_pattern = `(?i)^select \* `
 	select_players_statement regex_pattern = `(?i)^select (\*|[\w]+(?:\s*,\s*[\w]+)*) from players`
 )
 

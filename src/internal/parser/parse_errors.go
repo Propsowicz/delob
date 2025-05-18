@@ -6,6 +6,10 @@ func errorCannotGenerateParsedExpression(traceId string) error {
 	return fmt.Errorf("cannot generate parsed expression from given tokens")
 }
 
+func errorCannotGetSelectQueryComponents(traceId string) error {
+	return fmt.Errorf("cannot get select query components")
+}
+
 func errorWrongExpressionFormat(traceId, expression string) error {
 	return fmt.Errorf("expression should ends with semicolon (;), got - %s", expression)
 }

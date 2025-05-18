@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 )
@@ -14,6 +15,19 @@ func assertCorrectKeyOrder(t *testing.T, record model.Player, expectedKey string
 	if record.Key != expectedKey {
 		t.Errorf("wrong order: expected %s, got %s", expectedKey, record.Key)
 	}
+}
+
+func clearDateTimePropertyForSnap(result string) string {
+	resultObject := []model.Player{}
+	json.Unmarshal([]byte(result), &resultObject)
+	for i := range resultObject {
+		for j := range resultObject[i].Events {
+			resultObject[i].Events[j].DateTime = time.Date(2020, time.April, 10, 10, 10, 10, 10, time.UTC)
+		}
+	}
+	r, _ := json.Marshal(resultObject)
+
+	return string(r)
 }
 
 func setupSuite[test *testing.T | *testing.F](_ test) func(t test) {
@@ -101,7 +115,7 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 		t.Errorf("Should throw error.")
 	}
 
-	result3, _ := p.Execute("traceId", "SELECT Key, Value FROM Players;")
+	result3, _ := p.Execute("traceId", "SELECT Key, Elo FROM Players;")
 
 	snaps.MatchSnapshot(t, result1)
 	snaps.MatchSnapshot(t, result2)
@@ -148,7 +162,7 @@ func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("traceId", "ADD PLAYER 'Tom';")
-	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Elo FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -165,7 +179,7 @@ func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
 
 	p.Execute("traceId", "ADD PLAYER 'Tom';")
 	p.Execute("traceId", "ADD PLAYER 'Joe';")
-	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Elo FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -186,7 +200,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
 	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
 
-	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Elo FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -209,7 +223,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
 	p.Execute("traceId", "SET DRAW BETWEEN 'Joe' AND 'Tom';")
 
-	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Elo FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -227,7 +241,7 @@ func Test_IfCanSortAscendingByPlayerKey(t *testing.T) {
 	p.Execute("traceId", "ADD PLAYERS ('A', 'C', 'E');")
 	p.Execute("traceId", "ADD PLAYERS ('B', 'D');")
 
-	result, _ := p.Execute("traceId", "SELECT Key, Value FROM Players ORDER BY Key ASC;")
+	result, _ := p.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Key ASC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -248,7 +262,7 @@ func Test_IfCanSortDescendingByPlayerKey(t *testing.T) {
 	p.Execute("traceId", "ADD PLAYERS ('A', 'C', 'E');")
 	p.Execute("traceId", "ADD PLAYERS ('B', 'D');")
 
-	result, _ := p.Execute("traceId", "SELECT Key, Value FROM Players ORDER BY Key DESC;")
+	result, _ := p.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Key DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -275,7 +289,7 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
 	p.Execute("traceId", "SET WIN FOR 'A' AND LOSE FOR 'X';")
-	result, _ := p.Execute("traceId", "SELECT Key, Value FROM Players ORDER BY Elo DESC;")
+	result, _ := p.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Elo DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -332,4 +346,75 @@ func Test_IfCanSetMatchForAssymetricNumberOfPlayerKeys(t *testing.T) {
 	if err != nil {
 		t.Errorf("Should not throw error.")
 	}
+}
+
+func Test_IfCannotSelectQueryWithoutComponents(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	_, err := p.Execute("traceId", "SELECT FROM Players;")
+
+	if err == nil {
+		t.Errorf("Should throw error.")
+	}
+}
+
+func Test_IfCanSelectKeyAndEvents(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+
+	result, err := p.Execute("traceId", "SELECT Key, Events FROM Players;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+	snaps.MatchSnapshot(t, clearDateTimePropertyForSnap(result))
+}
+
+func Test_IfCanSelectKeyAndMatches(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+
+	result, err := p.Execute("traceId", "SELECT Key, Matches FROM Players;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+	snaps.MatchSnapshot(t, clearDateTimePropertyForSnap(result))
+}
+
+func Test_IfCanSelectAll(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	bufferManager, _ := buffer.NewBufferManager()
+	p := Processor{bufferManager: &bufferManager}
+
+	p.Execute("traceId", "ADD PLAYER 'Tom';")
+	p.Execute("traceId", "ADD PLAYER 'Joe';")
+	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
+
+	result, err := p.Execute("traceId", "SELECT * FROM Players;")
+
+	if err != nil {
+		t.Errorf("Should not throw error.")
+	}
+	snaps.MatchSnapshot(t, clearDateTimePropertyForSnap(result))
 }

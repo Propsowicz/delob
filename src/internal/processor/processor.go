@@ -129,7 +129,7 @@ func (p *Processor) selectStatement(selectOrder parser.SelectQuery) (string, err
 
 	for i := 0; i < len(allEntities); i++ {
 
-		playersCollection = append(playersCollection, dto.NewPlayer(allEntities[i], pagesCollections[i]))
+		playersCollection = append(playersCollection, dto.NewPlayer(allEntities[i], pagesCollections[i], selectOrder.SelectQueryComponents))
 	}
 
 	sort.Slice(playersCollection, func(i, j int) bool {
@@ -206,7 +206,7 @@ func (p *Processor) getPlayerByKey(key string) (dto.Player, error) {
 	if err != nil {
 		return dto.Player{}, err
 	}
-	return dto.NewPlayer(key, pages), nil
+	return dto.NewPlayer(key, pages, []parser.SelectQueryComponent{parser.KeyComponent, parser.EloComponent}), nil
 }
 
 func (p *Processor) addPlayer(order []string, transaction *buffer.Transaction) (string, error) {

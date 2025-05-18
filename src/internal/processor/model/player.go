@@ -2,37 +2,41 @@ package model
 
 import (
 	buffer "delob/internal/buffer"
+	"delob/internal/parser"
+	"delob/internal/shared"
+	"delob/internal/utils"
 	"time"
 )
 
 type Player struct {
 	Key     string  `json:"Key"`
-	Elo     int16   `json:"Elo"`
-	Stats   []Stats `json:"Stats,omitempty"`
+	Elo     int16   `json:"Elo,omitempty"`
+	Events  []Event `json:"Events,omitempty"`
 	records []int16
 }
 
-type Stats struct {
-	Change   int16
-	DateTime time.Time
+type Event struct {
+	Change      int16 `json:"Change,omitempty"`
+	DateTime    time.Time
+	TeamOne     []string `json:"TeamOne,omitempty"`
+	TeamTwo     []string `json:"TeamTwo,omitempty"`
+	MatchResult string   `json:"MatchResult,omitempty"`
 }
 
-// type Player struct {
-//     ID     string  `json:"id"`
-//     Name   string  `json:"name,omitempty"`
-//     Score  *int    `json:"score,omitempty"`
-//     Active bool    `json:"active,omitempty"`
-// }
-
-func NewPlayer(key string, pages []buffer.Page) Player {
+func NewPlayer(key string, pages []buffer.Page, queryComponents []parser.SelectQueryComponent) Player {
 	records := []int16{}
-	stats := []Stats{}
-	var elo int16
+	eventsDto := []Event{}
+	var calculatedElo int16
+	var eloDto int16
+	var keyDto string
+
+	selectEvents := utils.Contains(queryComponents, parser.EventsComponent)
+	selectMatches := utils.Contains(queryComponents, parser.MatchesComponent)
 
 	for i := 0; i < len(pages); i++ {
 
 		if pages[i].Header.IsCached {
-			elo += pages[i].Header.CachedValue
+			calculatedElo += pages[i].Header.CachedValue
 		}
 
 		for j := 0; j < len(pages[i].Body); j++ {
@@ -41,28 +45,47 @@ func NewPlayer(key string, pages []buffer.Page) Player {
 			}
 
 			if !pages[i].Header.IsCached {
-				elo += pages[i].Body[j].Value
+				calculatedElo += pages[i].Body[j].Value
 			}
-			// stats = append(stats,
-			// 	Stats{
-			// 		Change:   pages[i].Body[j].Value,
-			// 		DateTime: time.UnixMilli(pages[i].Body[j].AddTimestamp),
-			// 	},
-			// )
-			records = append(
-				records,
-				pages[i].Body[j].Value,
-			)
+
+			if selectEvents || selectMatches {
+				eventsDto = append(eventsDto, parseEvents(selectEvents, selectMatches, *pages[i].Body[j]))
+			}
 		}
 	}
 
+	if utils.Contains(queryComponents, parser.KeyComponent) {
+		keyDto = key
+	}
+	if utils.Contains(queryComponents, parser.EloComponent) {
+		eloDto = calculatedElo
+	}
+
 	player := Player{
-		Key:     key,
-		Elo:     elo,
-		Stats:   stats,
+		Key:     keyDto,
+		Elo:     eloDto,
+		Events:  eventsDto,
 		records: records,
 	}
 	return player
+}
+
+func parseEvents(selectEvents, selectMatches bool, body buffer.Record) Event {
+	eventDto := Event{}
+
+	eventDto.DateTime = time.UnixMilli(body.AddTimestamp)
+
+	if selectEvents {
+		eventDto.Change = body.Value
+	}
+
+	if selectMatches && body.MatchRef != nil {
+		eventDto.TeamOne = body.MatchRef.TeamOneKeys
+		eventDto.TeamTwo = body.MatchRef.TeamTwoKeys
+		eventDto.MatchResult = shared.MapToString(shared.MatchResult(body.MatchRef.MatchResult))
+	}
+
+	return eventDto
 }
 
 func MapPlayerToKeysCollection(players []Player) []string {

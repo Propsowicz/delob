@@ -9,6 +9,21 @@ const (
 	TeamTwoWins
 )
 
+func MapToString(r MatchResult) string {
+	switch r {
+	case Unknown:
+		return "Unknown"
+	case Draw:
+		return "Draw"
+	case TeamOneWins:
+		return "TeamOneWins"
+	case TeamTwoWins:
+		return "TeamTwoWins"
+	default:
+		return "Unknown"
+	}
+}
+
 func ScoreModifier(m MatchResult) (float64, float64) {
 	if m == TeamOneWins {
 		return 1, 0
