@@ -4,46 +4,48 @@ import (
 	"encoding/json"
 )
 
+type SelectQueryComponent string
+
+const (
+	KeyComponent     SelectQueryComponent = "key"
+	EloComponent     SelectQueryComponent = "elo"
+	EventsComponent  SelectQueryComponent = "events"
+	MatchesComponent SelectQueryComponent = "matches"
+)
+
 type SelectQuery struct {
-	SelectedCollection SelectedCollection
-	SelectedDetails    SelectedDetails
-	WhereClause        WhereClause
-	JoinMatches        bool
-	OrderBy            Field
-	OrderDir           OrderDir
+	SelectQueryComponents []SelectQueryComponent
+	WhereClause           WhereClause
+	JoinMatches           bool
+	OrderBy               Field
+	OrderDir              OrderDir
 }
 
-type SelectedCollection int8
-
-const (
-	PlayersCollection SelectedCollection = 0
-)
-
-type SelectedDetails int8
-
-const (
-	None  SelectedDetails = 0
-	Stats SelectedDetails = 1
-)
+var componentMap = map[string]SelectQueryComponent{
+	string(KeyComponent):     KeyComponent,
+	string(EloComponent):     EloComponent,
+	string(EventsComponent):  EventsComponent,
+	string(MatchesComponent): MatchesComponent,
+}
 
 func newSelectQuery(traceId string, tokens []Token) (ParsedExpression, error) {
 	// happy implementation for now
 
 	selectQuery := SelectQuery{
-		SelectedDetails: None,
+		SelectQueryComponents: []SelectQueryComponent{},
 	}
 
 	if tokens[0].Token != SelectPlayers {
+		// if tokens[0].Token != SelectPlayers || len(tokens[0].Value) == 0 {
 		return nil, errorCannotGenerateParsedExpression(traceId)
 	}
 
 	for _, tokenValue := range tokens[0].Value {
-		switch tokenValue {
-		case string(Players):
-			selectQuery.SelectedCollection = PlayersCollection
-		case string(StatsHistory):
-			selectQuery.SelectedDetails = Stats
+		queryComponent, ok := componentMap[tokenValue]
+		if !ok {
+			return nil, errorCannotGenerateParsedExpression(traceId)
 		}
+		selectQuery.SelectQueryComponents = append(selectQuery.SelectQueryComponents, queryComponent)
 	}
 
 	if len(tokens) == 2 && (tokens[1].Token == OrderByAsc || tokens[1].Token == OrderByDesc) {

@@ -102,13 +102,13 @@ func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, trans
 			return result, false, orderError
 		}
 	case parser.AddMatchCommandType:
-		result, orderError = p.updatePlayers(parsedExpression.(parser.AddMatchCommand), transaction)
+		result, orderError = p.addMatch(parsedExpression.(parser.AddMatchCommand), transaction)
 		isWriteOperation = true
 		if orderError != nil {
 			return result, false, orderError
 		}
 	case parser.SelectQueryType:
-		result, orderError = p.selectPlayers(parsedExpression.(parser.SelectQuery))
+		result, orderError = p.selectStatement(parsedExpression.(parser.SelectQuery))
 		if orderError != nil {
 			return result, false, orderError
 		}
@@ -119,7 +119,8 @@ func (p *Processor) handleOrders(parsedExpression parser.ParsedExpression, trans
 	return result, isWriteOperation, nil
 }
 
-func (p *Processor) selectPlayers(selectOrder parser.SelectQuery) (string, error) {
+func (p *Processor) selectStatement(selectOrder parser.SelectQuery) (string, error) {
+	// for now only select Players
 	allEntities, pagesCollections, err := p.bufferManager.GetAllPages()
 	if err != nil {
 		return "", err
@@ -127,6 +128,7 @@ func (p *Processor) selectPlayers(selectOrder parser.SelectQuery) (string, error
 	playersCollection := []dto.Player{}
 
 	for i := 0; i < len(allEntities); i++ {
+
 		playersCollection = append(playersCollection, dto.NewPlayer(allEntities[i], pagesCollections[i]))
 	}
 
@@ -155,7 +157,7 @@ func sortComparer[T int16 | string](isAsc bool, leftOperand, rightOperand T) boo
 	return leftOperand > rightOperand
 }
 
-func (p *Processor) updatePlayers(addMatchOrder parser.AddMatchCommand, transaction *buffer.Transaction) (string, error) {
+func (p *Processor) addMatch(addMatchOrder parser.AddMatchCommand, transaction *buffer.Transaction) (string, error) {
 	teamOnePlayers, teamTwoPlayers, err := p.loadPlayersToUpdate(addMatchOrder.TeamOneKeys, addMatchOrder.TeamTwoKeys)
 	if err != nil {
 		return "", err

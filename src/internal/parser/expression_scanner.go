@@ -24,13 +24,6 @@ const (
 	SelectQueryType       ExpressionType = "select_statement"
 )
 
-type SelectStatementComponent string
-
-const (
-	Players      SelectStatementComponent = "players"
-	StatsHistory SelectStatementComponent = "stats"
-)
-
 type TokenType string
 
 const (
@@ -70,10 +63,8 @@ func (sc *ExpressionScanner) scanRawExpression(expression string) error {
 		return sc.tryTokenizeSetWinAndLose(sanitazedExpression)
 	case isMatch(add_draw_match, sanitazedExpression):
 		return sc.tryTokenizeSetDraw(sanitazedExpression)
-
 	case isMatch(select_statement, sanitazedExpression):
-		return sc.tryTokenizeSelectStatement(sanitazedExpression)
-
+		return sc.tryTokenizeSelectPlayers(sanitazedExpression)
 	default:
 		return errorCannotParseExpression(sc.traceId, expression)
 	}
@@ -174,22 +165,43 @@ func (sc *ExpressionScanner) setDrawTokens(firstTokenValues, secondTokenValues [
 	})
 }
 
-func (sc *ExpressionScanner) tryTokenizeSelectStatement(sanitazedExpression string) error {
+func (sc *ExpressionScanner) tryTokenizeSelectPlayers(sanitazedExpression string) error {
 	sc.ExpressionType = SelectQueryType
 
-	if isMatch, _ := findRegexMatch(select_players_with_stats, sanitazedExpression); isMatch {
+	if matches, selectPlayerSubQuery := findRegexMatch(select_players_statement, sanitazedExpression); matches {
+		selectPlayerSubQuery = strings.ToLower(selectPlayerSubQuery)
+
+		queryComponents := sc.generateSelectQueryComponents(selectPlayerSubQuery)
+
 		sc.tokens = append(sc.tokens, Token{
 			SelectPlayers,
-			[]string{string(Players), string(StatsHistory)},
-		})
-	} else {
-		sc.tokens = append(sc.tokens, Token{
-			SelectPlayers,
-			[]string{string(Players)},
+			queryComponents,
 		})
 	}
-
 	return sc.tryTokenizeOrderBySubExpression(sanitazedExpression)
+}
+
+func (sc *ExpressionScanner) generateSelectQueryComponents(subquery string) []string {
+	queryComponents := []string{}
+	if isMatch(select_all, subquery) {
+		queryComponents = append(queryComponents, string(KeyComponent))
+		queryComponents = append(queryComponents, string(EloComponent))
+		queryComponents = append(queryComponents, string(EventsComponent))
+		queryComponents = append(queryComponents, string(MatchesComponent))
+	} else {
+		sc.tryAddSelectComponent(&queryComponents, subquery, KeyComponent)
+		sc.tryAddSelectComponent(&queryComponents, subquery, EloComponent)
+		sc.tryAddSelectComponent(&queryComponents, subquery, EventsComponent)
+
+		sc.tryAddSelectComponent(&queryComponents, subquery, MatchesComponent)
+	}
+	return queryComponents
+}
+
+func (sc *ExpressionScanner) tryAddSelectComponent(components *[]string, subquery string, component SelectQueryComponent) {
+	if strings.Contains(subquery, string(component)) {
+		*components = append(*components, string(component))
+	}
 }
 
 func (sc *ExpressionScanner) tryTokenizeOrderBySubExpression(sanitazedExpression string) error {

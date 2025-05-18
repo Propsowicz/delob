@@ -10,8 +10,9 @@ const (
 	select_statement   regex_pattern = `(?i)^select `
 	order_by           regex_pattern = `(?i) order by (elo|key) (asc|desc)`
 
-	// how many of select statemenst do we need? players with stats, players with match, matches. I guess no more. Bcuz of that I will use hardcoded regex to parse select statement
-	select_players_with_stats regex_pattern = `(?i) players with stats`
+	// cases: players (key, elo) + stats (change, dt) + matches (other player keys) + matches SOLO (all matches)
+	select_all               regex_pattern = `(?i)^select * `
+	select_players_statement regex_pattern = `(?i)^select (\*|[\w]+(?:\s*,\s*[\w]+)*) from players`
 )
 
 // supported functions

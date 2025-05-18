@@ -2,16 +2,31 @@ package model
 
 import (
 	buffer "delob/internal/buffer"
+	"time"
 )
 
 type Player struct {
-	Key     string
-	Elo     int16
+	Key     string  `json:"Key"`
+	Elo     int16   `json:"Elo"`
+	Stats   []Stats `json:"Stats,omitempty"`
 	records []int16
 }
 
+type Stats struct {
+	Change   int16
+	DateTime time.Time
+}
+
+// type Player struct {
+//     ID     string  `json:"id"`
+//     Name   string  `json:"name,omitempty"`
+//     Score  *int    `json:"score,omitempty"`
+//     Active bool    `json:"active,omitempty"`
+// }
+
 func NewPlayer(key string, pages []buffer.Page) Player {
 	records := []int16{}
+	stats := []Stats{}
 	var elo int16
 
 	for i := 0; i < len(pages); i++ {
@@ -28,7 +43,12 @@ func NewPlayer(key string, pages []buffer.Page) Player {
 			if !pages[i].Header.IsCached {
 				elo += pages[i].Body[j].Value
 			}
-
+			// stats = append(stats,
+			// 	Stats{
+			// 		Change:   pages[i].Body[j].Value,
+			// 		DateTime: time.UnixMilli(pages[i].Body[j].AddTimestamp),
+			// 	},
+			// )
 			records = append(
 				records,
 				pages[i].Body[j].Value,
@@ -39,6 +59,7 @@ func NewPlayer(key string, pages []buffer.Page) Player {
 	player := Player{
 		Key:     key,
 		Elo:     elo,
+		Stats:   stats,
 		records: records,
 	}
 	return player

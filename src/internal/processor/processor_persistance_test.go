@@ -18,13 +18,13 @@ func TestIfDataIsPersistentBetweenDatabaseRuns(t *testing.T) {
 	processorFirstRun.Execute("traceId", "SET WIN FOR ('Tom') AND LOSE FOR ('Joe', 'Jim');")
 	processorFirstRun.Execute("traceId", "SET WIN FOR ('Tom', 'Bob') AND LOSE FOR ('Joe', 'Jim');")
 
-	resultFirstRun, _ := processorFirstRun.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
+	resultFirstRun, _ := processorFirstRun.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Elo DESC;")
 
 	bufferManagerSecondRun, _ := buffer.NewBufferManager()
 	processorSecondRun := Processor{bufferManager: &bufferManagerSecondRun}
 	processorSecondRun.Initialize()
 
-	resultSecondRun, _ := processorSecondRun.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
+	resultSecondRun, _ := processorSecondRun.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Elo DESC;")
 
 	if resultFirstRun != resultSecondRun {
 		t.Errorf("Data is not persistent before and after initialization from a log data.")
@@ -48,7 +48,7 @@ func TestIfDataIsPersistentBetweenDatabaseRunsWithTransactionalData(t *testing.T
 	processorFirstRun.Execute("traceId", "SET WIN FOR ('Tom') AND LOSE FOR ('Joe', 'Jim');")
 	processorFirstRun.Execute("traceId", "SET WIN FOR ('Tom', 'Bob') AND LOSE FOR ('Joe', 'Jim');")
 
-	resultFirstRun, _ := processorFirstRun.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
+	resultFirstRun, _ := processorFirstRun.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Elo DESC;")
 
 	if resultFirstRun != "[{\"Key\":\"Tom\",\"Elo\":1344},{\"Key\":\"Bob\",\"Elo\":1314},{\"Key\":\"Jim\",\"Elo\":1272},{\"Key\":\"Joe\",\"Elo\":1256}]" {
 		t.Errorf("Data is not correct - %s.", resultFirstRun)
@@ -58,7 +58,7 @@ func TestIfDataIsPersistentBetweenDatabaseRunsWithTransactionalData(t *testing.T
 	processorSecondRun := Processor{bufferManager: &bufferManagerSecondRun}
 	processorSecondRun.Initialize()
 
-	resultSecondRun, _ := processorSecondRun.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
+	resultSecondRun, _ := processorSecondRun.Execute("traceId", "SELECT Key, Elo FROM Players ORDER BY Elo DESC;")
 
 	if resultFirstRun != resultSecondRun {
 		t.Errorf("Data is not persistent before and after initialization from a log data.")

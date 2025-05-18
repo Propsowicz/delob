@@ -101,7 +101,7 @@ func Test_IfCannotAddTheSamePlayerTwicePlayer(t *testing.T) {
 		t.Errorf("Should throw error.")
 	}
 
-	result3, _ := p.Execute("traceId", "SELECT Players;")
+	result3, _ := p.Execute("traceId", "SELECT Key, Value FROM Players;")
 
 	snaps.MatchSnapshot(t, result1)
 	snaps.MatchSnapshot(t, result2)
@@ -148,7 +148,7 @@ func Test_IfCanSelectAllWhenThereIsOnePlayer(t *testing.T) {
 	p := Processor{bufferManager: &bufferManager}
 
 	p.Execute("traceId", "ADD PLAYER 'Tom';")
-	result, err := p.Execute("traceId", "SELECT Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -165,7 +165,7 @@ func Test_IfCanSelectTwoPlayersWithoutUpdatingResults(t *testing.T) {
 
 	p.Execute("traceId", "ADD PLAYER 'Tom';")
 	p.Execute("traceId", "ADD PLAYER 'Joe';")
-	result, err := p.Execute("traceId", "SELECT Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -186,7 +186,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResults(t *testing.T) {
 	p.Execute("traceId", "SET WIN FOR 'Tom' AND LOSE FOR 'Joe';")
 	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
 
-	result, err := p.Execute("traceId", "SELECT Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -209,7 +209,7 @@ func Test_IfCanSelectTwoPlayersWithUpdatingResultsWithDrawResult(t *testing.T) {
 	p.Execute("traceId", "SET WIN FOR 'Joe' AND LOSE FOR 'Tom';")
 	p.Execute("traceId", "SET DRAW BETWEEN 'Joe' AND 'Tom';")
 
-	result, err := p.Execute("traceId", "SELECT Players;")
+	result, err := p.Execute("traceId", "SELECT Key, Value FROM Players;")
 
 	if err != nil {
 		t.Errorf("Should not throw error.")
@@ -227,7 +227,7 @@ func Test_IfCanSortAscendingByPlayerKey(t *testing.T) {
 	p.Execute("traceId", "ADD PLAYERS ('A', 'C', 'E');")
 	p.Execute("traceId", "ADD PLAYERS ('B', 'D');")
 
-	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Key ASC;")
+	result, _ := p.Execute("traceId", "SELECT Key, Value FROM Players ORDER BY Key ASC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -248,7 +248,7 @@ func Test_IfCanSortDescendingByPlayerKey(t *testing.T) {
 	p.Execute("traceId", "ADD PLAYERS ('A', 'C', 'E');")
 	p.Execute("traceId", "ADD PLAYERS ('B', 'D');")
 
-	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Key DESC;")
+	result, _ := p.Execute("traceId", "SELECT Key, Value FROM Players ORDER BY Key DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
@@ -275,7 +275,7 @@ func Test_IfCanSortDescendingByPlayerElo(t *testing.T) {
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
 	p.Execute("traceId", "SET WIN FOR 'B' AND LOSE FOR 'X';")
 	p.Execute("traceId", "SET WIN FOR 'A' AND LOSE FOR 'X';")
-	result, _ := p.Execute("traceId", "SELECT Players ORDER BY Elo DESC;")
+	result, _ := p.Execute("traceId", "SELECT Key, Value FROM Players ORDER BY Elo DESC;")
 
 	data := []model.Player{}
 	json.Unmarshal([]byte(result), &data)
