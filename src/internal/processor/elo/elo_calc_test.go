@@ -57,7 +57,7 @@ func Test_IfCanCalculateCorrectEloForDecisiveResultAndDifferentStartingElo_Winne
 
 	calc := NewCalculator(teamOne, teamTwo, result)
 
-	var expectedTeamOneLambda int16 = 1
+	var expectedTeamOneLambda int16 = 2
 	var expectedTeamTwoLambda int16 = -expectedTeamOneLambda
 
 	if are_not_equal(calc.TeamOneEloLambda(), expectedTeamOneLambda) {
@@ -83,5 +83,18 @@ func Test_IfCanCalculateCorrectEloForDecisiveResultAndDifferentStartingElo_Winne
 	}
 	if are_not_equal(calc.TeamTwoEloLambda(), expectedTeamTwoLambda) {
 		t.Errorf("Wrong elo calculation; expected: %d, got: %d.", expectedTeamTwoLambda, calc.TeamTwoEloLambda())
+	}
+}
+
+func Test_IfCanCalculateCorrectEloForDecisiveResultAndDifferentStartingElo_WinnerHasLessElo2(t *testing.T) {
+	teamOne := []dto.Player{{Elo: 1379}, {Elo: 1362}, {Elo: 1328}, {Elo: 1300}, {Elo: 1285}, {Elo: 1253}}
+	teamTwo := []dto.Player{{Elo: 1362}, {Elo: 1362}, {Elo: 1314}, {Elo: 1313}, {Elo: 1270}, {Elo: 1268}}
+	result := shared.TeamOneWins
+
+	calc := NewCalculator(teamOne, teamTwo, result)
+	var expectedLambda int16 = 16
+
+	if are_not_equal(calc.TeamOneEloLambda(), expectedLambda) {
+		t.Errorf("Wrong elo calculation; expected: %d, got: %d.", expectedLambda, calc.TeamOneEloLambda())
 	}
 }

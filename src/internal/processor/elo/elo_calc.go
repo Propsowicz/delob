@@ -30,8 +30,8 @@ func NewCalculator(teamOnePlayers []dto.Player, teamTwoPlayers []dto.Player, mat
 	S1, S2 := shared.ScoreModifier(matchResult)
 
 	return Calculator{
-		teamOneEloLambda: int16(k * (S1 - E1)),
-		teamTwoEloLambda: int16(k * (S2 - E2)),
+		teamOneEloLambda: int16(math.Round(k * (S1 - E1))),
+		teamTwoEloLambda: int16(math.Round(k * (S2 - E2))),
 	}
 }
 
