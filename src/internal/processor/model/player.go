@@ -9,10 +9,11 @@ import (
 )
 
 type Player struct {
-	Key     string  `json:"Key"`
-	Elo     int16   `json:"Elo,omitempty"`
-	Events  []Event `json:"Events,omitempty"`
-	records []int16
+	Key         string  `json:"Key"`
+	Elo         int16   `json:"Elo,omitempty"`
+	Events      []Event `json:"Events,omitempty"`
+	InternalKey string  `json:"-"`
+	InternalElo int16   `json:"-"`
 }
 
 type Event struct {
@@ -24,7 +25,6 @@ type Event struct {
 }
 
 func NewPlayer(key string, pages []buffer.Page, queryComponents []parser.SelectQueryComponent) Player {
-	records := []int16{}
 	eventsDto := []Event{}
 	var calculatedElo int16
 	var eloDto int16
@@ -62,10 +62,11 @@ func NewPlayer(key string, pages []buffer.Page, queryComponents []parser.SelectQ
 	}
 
 	player := Player{
-		Key:     keyDto,
-		Elo:     eloDto,
-		Events:  eventsDto,
-		records: records,
+		Key:         keyDto,
+		Elo:         eloDto,
+		Events:      eventsDto,
+		InternalKey: key,
+		InternalElo: calculatedElo,
 	}
 	return player
 }

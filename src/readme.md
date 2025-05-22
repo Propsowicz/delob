@@ -16,9 +16,9 @@ PLAN
 Release 2.0:
 1. Add "WHERE"
 2. Add "JOIN Matches"
-3. Add "SELECT Elo / SELECT History / SELECT *"
+3. OK Add "SELECT Elo / SELECT History / SELECT *"
 4. Add Readme
-5. Check math's rounds
+5. OK Check math's rounds
 6. Fix multiple Create User bug
 7. Move User/Password to docker env
 8. Add encoding of logs

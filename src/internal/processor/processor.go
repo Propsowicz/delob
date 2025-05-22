@@ -135,11 +135,11 @@ func (p *Processor) selectStatement(selectOrder parser.SelectQuery) (string, err
 	sort.Slice(playersCollection, func(i, j int) bool {
 		switch selectOrder.OrderBy {
 		case parser.Key:
-			return sortComparer(selectOrder.OrderDir == parser.OrderDir(parser.Asc), playersCollection[i].Key, playersCollection[j].Key)
+			return sortComparer(selectOrder.OrderDir == parser.OrderDir(parser.Asc), playersCollection[i].InternalKey, playersCollection[j].InternalKey)
 		case parser.Elo:
-			return sortComparer(selectOrder.OrderDir == parser.OrderDir(parser.Asc), playersCollection[i].Elo, playersCollection[j].Elo)
+			return sortComparer(selectOrder.OrderDir == parser.OrderDir(parser.Asc), playersCollection[i].InternalElo, playersCollection[j].InternalElo)
 		}
-		return sortComparer(true, playersCollection[i].Key, playersCollection[j].Key)
+		return sortComparer(true, playersCollection[i].InternalKey, playersCollection[j].InternalKey)
 	})
 
 	jsonResult, errMarshal := json.Marshal(playersCollection)

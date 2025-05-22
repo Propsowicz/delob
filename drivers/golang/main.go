@@ -1,9 +1,9 @@
 package main
 
 import (
+	driver "delob/driver/delobdriver"
 	"fmt"
-
-	driver "github.com/Propsowicz/delob-driver"
+	// driver "github.com/Propsowicz/delob-driver"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	result, err := context.GetPlayersOrderBy(driver.Elo, driver.Descending)
+	result, err := context.Query(context.Select(driver.Key, driver.Elo).From(driver.Players).OrderBy(driver.Elo, driver.Descending))
 	if err != nil {
 		fmt.Println(err)
 	}

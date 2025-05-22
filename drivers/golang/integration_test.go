@@ -1,12 +1,12 @@
 package main
 
 import (
+	driver "delob/driver/delobdriver"
 	"encoding/json"
 	"os"
 	"testing"
 	"time"
-
-	driver "github.com/Propsowicz/delob-driver"
+	// driver "github.com/Propsowicz/delob-driver"
 )
 
 func assertCorrectKeyOrder(t *testing.T, player driver.Player, expectedKey string) {
@@ -94,7 +94,7 @@ func FuzzTest_TestInvalidUserCredentials(f *testing.F) {
 	f.Fuzz(func(t *testing.T, connectionString string) {
 		context, err := driver.NewContext(connectionString)
 
-		_, err = context.GetPlayers()
+		_, err = context.Query(context.Select().From(driver.Players).OrderBy(driver.Elo, driver.Descending))
 		if err == nil {
 			t.Errorf("Should not be able to connect to the database.")
 		}
@@ -117,7 +117,7 @@ func Test_TestCase_1(t *testing.T) {
 		}
 	}
 
-	result, errResult := context.GetPlayersOrderBy(driver.Elo, driver.Descending)
+	result, errResult := context.Query(context.Select().From(driver.Players).OrderBy(driver.Elo, driver.Descending))
 	if errResult != nil {
 		t.Errorf("Should be able to create delob context")
 	}
@@ -129,8 +129,8 @@ func Test_TestCase_1(t *testing.T) {
 	assertCorrectKeyOrder(t, result[2], "0cLEk")
 	assertCorrectKeyOrder(t, result[3], "Nr7tf")
 	assertCorrectKeyOrder(t, result[4], "ts58a")
-	assertCorrectKeyOrder(t, result[5], "XnF1a")
-	assertCorrectKeyOrder(t, result[6], "FAJur")
+	assertCorrectKeyOrder(t, result[5], "FAJur")
+	assertCorrectKeyOrder(t, result[6], "XnF1a")
 	assertCorrectKeyOrder(t, result[7], "FoEqy")
 	assertCorrectKeyOrder(t, result[8], "caka4")
 	assertCorrectKeyOrder(t, result[9], "nL7QC")
@@ -145,7 +145,7 @@ func Test_TestCase_1_SELECT_PerformanceTest(t *testing.T) {
 
 	start := time.Now()
 
-	_, errResult := context.GetPlayersOrderBy(driver.Elo, driver.Descending)
+	_, errResult := context.Query(context.Select().From(driver.Players).OrderBy(driver.Elo, driver.Descending))
 	elapsed := time.Since(start).Milliseconds()
 
 	if errResult != nil {
