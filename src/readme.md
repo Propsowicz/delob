@@ -19,6 +19,6 @@ Release 2.0:
 3. OK Add "SELECT Elo / SELECT History / SELECT *"
 4. Add Readme
 5. OK Check math's rounds
-6. Fix multiple Create User bug
+6. OK Fix multiple Create User bug
 7. Move User/Password to docker env
 8. Add encoding of logs

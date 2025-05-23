@@ -18,6 +18,6 @@ for arg in "$@"; do
     esac
 done
 
-./elo --add-user $USERNAME $PASSWORD
+./elo --init-app $USERNAME $PASSWORD
 
 ./delob
